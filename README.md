@@ -28,6 +28,7 @@ Visit `http://localhost:3000` to access the application.
 ## 📋 Features
 
 ### Core Functionality
+
 - **CSV Upload & Processing**: Upload customer CSV files for batch SEPA Direct Debit processing
 - **Multi-Company Support**: Automatic detection and configuration for BestWin, Grand Luck, and MeLinux
 - **Dynamic Descriptors**: Customize merchant information on bank statements
@@ -36,6 +37,7 @@ Visit `http://localhost:3000` to access the application.
 - **Batch Analytics**: View transaction statistics, success rates, and financial summaries
 
 ### Advanced Features
+
 - **Retry Logic**: Automatic and manual retry for failed transactions
 - **Row Editing**: Edit individual CSV rows before submission
 - **Manual Void**: Cancel pending/approved transactions
@@ -46,6 +48,7 @@ Visit `http://localhost:3000` to access the application.
 ## 🏗️ Architecture
 
 ### Technology Stack
+
 - **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: Next.js API Routes
 - **Database**: MongoDB
@@ -53,6 +56,7 @@ Visit `http://localhost:3000` to access the application.
 - **Authentication**: JWT-based session management
 
 ### Project Structure
+
 ```
 /app
   /api/emp          # emerchantpay API routes
@@ -111,11 +115,13 @@ SESSION_SECRET=your_random_secret_key_here
 The system supports multiple companies with different configurations:
 
 - **BestWin**: Detected by filename containing "bestwin"
+
   - Site: `https://bestwin.team`
   - Email: `Info@bestwin.team`
   - Descriptor: "bestwin"
 
 - **Grand Luck**: Detected by filename containing "grandluck", "grand-luck", or "grand_luck"
+
   - Site: `https://www.grand-luck-service.com`
   - Email: `info@grand-luck-service.com`
   - Descriptor: "Grand Luck Service"
@@ -159,11 +165,13 @@ pnpm lint
 The system accepts CSV files with the following fields (customizable via field mapping):
 
 ### Required Fields
+
 - `iban` - Customer's IBAN
 - `amount` - Transaction amount (in major currency units, e.g., 99.00 for €99)
 - `currency` - Currency code (e.g., EUR)
 
 ### Optional Fields
+
 - `first_name`, `last_name` - Customer name
 - `email` - Customer email
 - `address`, `zip_code`, `city`, `country` - Billing address
@@ -201,6 +209,7 @@ See `.tools/README.md` for full documentation.
 ## 📞 Support
 
 For technical issues:
+
 - Check the documentation in `/documentation`
 - Review logs in MongoDB `emp_uploads` collection
 - Contact emerchantpay support: tech-support@emerchantpay.com
@@ -213,6 +222,6 @@ Proprietary - All rights reserved
 
 **Version**: 2.0  
 **Last Updated**: November 2025  
-**Maintained by**: MeLinux Development Team
+**Maintained by**: MeLinux5 Development Team
 
 # Tether Project
