@@ -7,7 +7,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 30
+
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.0
@@ -15,9 +16,10 @@ jobs:
           host: 68.183.103.79
           username: root
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 25m
           script: |
             cd /var/www/melinux
             git pull origin main
-            npm install
+            npm install --legacy-peer-deps
             npm run build
             pm2 restart all
