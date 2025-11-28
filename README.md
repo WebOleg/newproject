@@ -215,3 +215,4 @@ Proprietary - All rights reserved
 **Last Updated**: November 2025  
 **Maintained by**: MeLinux Development Team
 
+# Tether Project
