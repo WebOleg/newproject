@@ -1,0 +1,317 @@
+
+> my-v0-project@0.1.0 build /var/www/melinux
+> next build
+
+  ▲ Next.js 14.2.16
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ⚠ Compiled with warnings
+
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+./node_modules/.pnpm/config@3.3.12/node_modules/config/lib/config.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/utils/threeds_utils.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transactions/financial/cards/threeds/v2/method_continue.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transaction.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis.js
+./lib/emerchantpay-reconcile.ts
+./app/api/emp/reconcile/[id]/route.ts
+
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+require.extensions is not supported by webpack. Use a loader instead.
+
+Import trace for requested module:
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+./node_modules/.pnpm/config@3.3.12/node_modules/config/lib/config.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/utils/threeds_utils.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transactions/financial/cards/threeds/v2/method_continue.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transaction.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis.js
+./lib/emerchantpay-reconcile.ts
+./app/api/emp/reconcile/[id]/route.ts
+
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+./node_modules/.pnpm/config@3.3.12/node_modules/config/lib/config.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/utils/threeds_utils.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transactions/financial/cards/threeds/v2/method_continue.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transaction.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis.js
+./lib/emerchantpay-reconcile.ts
+./app/api/emp/reconcile/[id]/route.ts
+
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+./node_modules/.pnpm/config@3.3.12/node_modules/config/lib/config.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/utils/threeds_utils.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transactions/financial/cards/threeds/v2/method_continue.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transaction.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis.js
+./lib/emerchantpay-reconcile.ts
+./app/api/emp/reconcile/[id]/route.ts
+
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+./node_modules/.pnpm/config@3.3.12/node_modules/config/lib/config.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/utils/threeds_utils.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transactions/financial/cards/threeds/v2/method_continue.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transaction.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis.js
+./lib/emerchantpay-reconcile.ts
+./app/api/emp/reconcile/[id]/route.ts
+
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+./node_modules/.pnpm/config@3.3.12/node_modules/config/lib/config.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/utils/threeds_utils.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transactions/financial/cards/threeds/v2/method_continue.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transaction.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis.js
+./lib/emerchantpay-reconcile.ts
+./app/api/emp/reconcile/[id]/route.ts
+
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+./node_modules/.pnpm/config@3.3.12/node_modules/config/lib/config.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/utils/threeds_utils.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transactions/financial/cards/threeds/v2/method_continue.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transaction.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis.js
+./lib/emerchantpay-reconcile.ts
+./app/api/emp/reconcile/[id]/route.ts
+
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/.pnpm/config@3.3.12/node_modules/config/parser.js
+./node_modules/.pnpm/config@3.3.12/node_modules/config/lib/config.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/utils/threeds_utils.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transactions/financial/cards/threeds/v2/method_continue.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis/transaction.js
+./node_modules/.pnpm/genesis.js@3.3.9/node_modules/genesis.js/lib/genesis.js
+./lib/emerchantpay-reconcile.ts
+./app/api/emp/reconcile/[id]/route.ts
+
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+ ⚠ Using edge runtime on a page currently disables static generation for that page
+   Generating static pages (0/35) ...
+[Analytics] Error fetching transactions: B [Error]: Dynamic server usage: Route /api/emp/analytics/transactions couldn't be rendered statically because it used `nextUrl.searchParams`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:21777)
+    at Object.get (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:28809)
+    at c (/var/www/melinux/.next/server/app/api/emp/analytics/cache/transactions/route.js:7:1791)
+    at /var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:37016
+    at /var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854)
+    at /var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:122:103 {
+  description: "Route /api/emp/analytics/transactions couldn't be rendered statically because it used `nextUrl.searchParams`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (8/35) 
+ ⚠ Unsupported metadata viewport is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /about. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /about. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /contact. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /contact. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/analytics/chargeback-extraction. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/analytics/chargeback-extraction. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/cancel. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/cancel. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/analytics/batch-chargebacks. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/analytics/batch-chargebacks. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/failure. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/failure. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/analytics. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/analytics. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (17/35) 
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/pending. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/pending. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/success. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/success. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/settings. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /emp/settings. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/consulting. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/consulting. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/accounting. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/accounting. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/payroll. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/payroll. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/investments. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/investments. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (26/35) 
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/tax. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/tax. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/registration. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/registration. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /privacy. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /privacy. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/factoring. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/factoring. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/unreal-factoring. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /services/unreal-factoring. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /terms. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /terms. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+[Analytics] Error fetching chargebacks: B [Error]: Dynamic server usage: Route /api/emp/analytics/chargebacks couldn't be rendered statically because it used `nextUrl.searchParams`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:21777)
+    at Object.get (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:28809)
+    at l (/var/www/melinux/.next/server/app/api/emp/analytics/cache/chargebacks/route.js:6:2600)
+    at /var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/next-server/app-route.runtime.prod.js:6:37016
+    at /var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:140:36
+    at NoopContextManager.with (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:7062)
+    at ContextAPI.with (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:518)
+    at NoopTracer.startActiveSpan (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18093)
+    at ProxyTracer.startActiveSpan (/var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/compiled/@opentelemetry/api/index.js:1:18854)
+    at /var/www/melinux/node_modules/.pnpm/next@14.2.16_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/server/lib/trace/tracer.js:122:103 {
+  description: "Route /api/emp/analytics/chargebacks couldn't be rendered statically because it used `nextUrl.searchParams`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+ ✓ Generating static pages (35/35)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                            Size     First Load JS
+┌ ○ /                                                  521 B           100 kB
+├ ○ /_not-found                                        877 B          88.4 kB
+├ ○ /about                                             509 B          94.9 kB
+├ ƒ /api/contact                                       0 B                0 B
+├ ƒ /api/emp/analytics/batch-chargebacks               0 B                0 B
+├ ƒ /api/emp/analytics/cache/chargebacks               0 B                0 B
+├ ƒ /api/emp/analytics/cache/transactions              0 B                0 B
+├ ƒ /api/emp/analytics/chargeback-extraction           0 B                0 B
+├ ƒ /api/emp/analytics/chargeback-extraction/csv       0 B                0 B
+├ ƒ /api/emp/analytics/chargebacks                     0 B                0 B
+├ ƒ /api/emp/analytics/transactions                    0 B                0 B
+├ ƒ /api/emp/auth/login                                0 B                0 B
+├ ƒ /api/emp/auth/logout                               0 B                0 B
+├ ƒ /api/emp/edit-row/[uploadId]/[rowIndex]            0 B                0 B
+├ ƒ /api/emp/notifications/emerchantpay                0 B                0 B
+├ ƒ /api/emp/reconcile/[id]                            0 B                0 B
+├ ƒ /api/emp/row/[uploadId]/[rowIndex]                 0 B                0 B
+├ ƒ /api/emp/settings/mapping                          0 B                0 B
+├ ƒ /api/emp/submit-batch/[id]                         0 B                0 B
+├ ƒ /api/emp/submit/[id]                               0 B                0 B
+├ ƒ /api/emp/upload                                    0 B                0 B
+├ ƒ /api/emp/uploads                                   0 B                0 B
+├ ƒ /api/emp/uploads/[id]                              0 B                0 B
+├ ƒ /api/emp/uploads/delete-row/[uploadId]/[rowIndex]  0 B                0 B
+├ ƒ /api/emp/uploads/delete/[id]                       0 B                0 B
+├ ƒ /api/emp/uploads/filter-chargebacks/[id]           0 B                0 B
+├ ƒ /api/emp/uploads/replace/[id]                      0 B                0 B
+├ ƒ /api/emp/uploads/reset/[id]                        0 B                0 B
+├ ƒ /api/emp/uploads/void-approved/[id]                0 B                0 B
+├ ƒ /api/emp/void-manual                               0 B                0 B
+├ ○ /contact                                           4.62 kB        99.9 kB
+├ ƒ /emp                                               8.76 kB         143 kB
+├ ƒ /emp/analytics                                     121 kB          392 kB
+├ ƒ /emp/analytics/batch-chargebacks                   7.84 kB         260 kB
+├ ƒ /emp/analytics/chargeback-extraction               3.5 kB          255 kB
+├ ƒ /emp/cancel                                        221 B          94.6 kB
+├ ƒ /emp/failure                                       220 B          94.6 kB
+├ ƒ /emp/login                                         2.08 kB         107 kB
+├ ƒ /emp/pending                                       221 B          94.6 kB
+├ ƒ /emp/settings                                      4.75 kB         127 kB
+├ ƒ /emp/success                                       220 B          94.6 kB
+├ ƒ /emp/uploads/[id]                                  13.4 kB         134 kB
+├ ○ /privacy                                           220 B          94.6 kB
+├ ○ /robots.txt                                        0 B                0 B
+├ ○ /services/accounting                               220 B          94.6 kB
+├ ○ /services/consulting                               220 B          94.6 kB
+├ ○ /services/factoring                                220 B          94.6 kB
+├ ○ /services/investments                              220 B          94.6 kB
+├ ○ /services/payroll                                  220 B          94.6 kB
+├ ○ /services/registration                             220 B          94.6 kB
+├ ○ /services/tax                                      220 B          94.6 kB
+├ ○ /services/unreal-factoring                         220 B          94.6 kB
+├ ○ /sitemap.xml                                       0 B                0 B
+└ ○ /terms                                             220 B          94.6 kB
++ First Load JS shared by all                          87.5 kB
+  ├ chunks/240-5fe2679aecce55e1.js                     31.8 kB
+  ├ chunks/8bc8d761-94fa3bf86236d8a5.js                53.6 kB
+  └ other shared chunks (total)                        2.15 kB
+
+
+ƒ Middleware                                           27.1 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
