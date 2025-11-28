@@ -222,6 +222,6 @@ Proprietary - All rights reserved
 
 **Version**: 2.0  
 **Last Updated**: November 2025  
-**Maintained by**: MeLinux5 Development Team
+**Maintained by**: MeLinux557 Development Team
 
 # Tether Project
