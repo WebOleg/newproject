@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
-import nodemailer from 'nodemailer'
 
-// IMPORTANT: change to nodejs for SMTP (nodemailer)
-export const runtime = 'nodejs'
+export const runtime = 'edge'
 
 const enc = new TextEncoder()
 
@@ -19,50 +17,39 @@ async function hmacSHA256(secret: string, data: string) {
 }
 
 async function sendOtpEmail(to: string, code: string) {
-  const host = process.env.SMTP_HOST
-  const port = Number(process.env.SMTP_PORT ?? 587)
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
-  const from = process.env.SMTP_FROM || user
+  const apiKey = process.env.RESEND_API_KEY
+  const from = process.env.RESEND_FROM || 'MeLinux Admin <onboarding@resend.dev>'
 
-  console.log('SMTP config (masked):', {
-    host,
-    port,
-    user,
-    from,
-  })
-
-  if (!host || !user || !pass) {
-    console.error('SMTP not fully configured')
+  if (!apiKey) {
+    console.error('Resend missing API key, output OTP to console')
     console.log('OTP for', to, 'is', code)
-    throw new Error('SMTP not fully configured')
+    return
   }
 
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465, // Aruba: 465 -> SSL, 587 -> STARTTLS
-    auth: { user, pass },
-  })
+  console.log('[Resend] Sending OTP', { to, from })
 
-  try {
-    // Verify the connection & auth
-    await transporter.verify()
-    console.log('SMTP connection verified')
-
-    const info = await transporter.sendMail({
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
       from,
       to,
       subject: 'Your MeLinux admin login code',
-      text: `Your one-time login code is: ${code}\n\nIt expires in 5 minutes.`,
-    })
+      text: `Your one-time login code is: ${code}\n\nThis code expires in 5 minutes.`,
+    }),
+  })
 
-    console.log('OTP email sent:', info.messageId, info.accepted, info.rejected)
-  } catch (err) {
-    console.error('Error sending OTP email:', err)
-    console.log('OTP for', to, 'is', code)
-    throw err
+  if (!res.ok) {
+    const body = await res.text()
+    console.error('[Resend ERROR]', res.status, body)
+    console.log('OTP fallback (not sent):', code)
+    throw new Error('Failed to send OTP email')
   }
+
+  console.log('[Resend] OTP email sent successfully')
 }
 
 export async function POST(req: Request) {
@@ -91,7 +78,7 @@ export async function POST(req: Request) {
     const raw = `${username}.${ts}.${otpSig}`
     const tempToken = Buffer.from(raw).toString('base64')
 
-    // 3) Send OTP via email (or log if SMTP incomplete)
+    // 3) Send OTP via email
     await sendOtpEmail(adminEmail, otp)
 
     // 4) Tell client to ask for OTP next
@@ -99,7 +86,6 @@ export async function POST(req: Request) {
       ok: true,
       step: 'otp_required',
       tempToken,
-      // Optional helper while developing – comment out in prod if you want
       debugOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
     })
   } catch (err: any) {
