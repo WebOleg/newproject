@@ -30,6 +30,7 @@ interface CopyReport {
   totalCopied: number
   totalDuration: number
   success: boolean
+  dryRun?: boolean
 }
 
 async function copyCollection(
@@ -52,20 +53,7 @@ async function copyCollection(
     console.log(`   Source documents: ${sourceCount}`)
     console.log(`   Target documents (before): ${targetCountBefore}`)
 
-    if (sourceCount === 0) {
-      console.log(`   ⚠️  Source collection is empty, skipping...`)
-      return {
-        collection: collectionName,
-        sourceCount,
-        targetCountBefore,
-        targetCountAfter: targetCountBefore,
-        copiedCount: 0,
-        duration: Date.now() - startTime,
-        success: true,
-      }
-    }
-
-    // Copy indexes first
+    // Copy indexes first (even for empty collections)
     console.log(`   📋 Copying indexes...`)
     const indexes = await sourceCollection.indexes()
     for (const index of indexes) {
@@ -81,6 +69,26 @@ async function copyCollection(
         if (error.code !== 85 && error.code !== 86) {
           console.log(`   ⚠️  Index creation warning: ${error.message}`)
         }
+      }
+    }
+
+    if (sourceCount === 0) {
+      console.log(`   ℹ️  Source collection is empty, creating empty collection in target...`)
+      // Create the collection in target database (if it doesn't exist)
+      await targetDb.createCollection(collectionName).catch(() => {
+        // Collection might already exist, which is fine
+      })
+
+      const targetCountAfter = await targetCollection.countDocuments()
+
+      return {
+        collection: collectionName,
+        sourceCount,
+        targetCountBefore,
+        targetCountAfter,
+        copiedCount: 0,
+        duration: Date.now() - startTime,
+        success: true,
       }
     }
 
@@ -204,7 +212,16 @@ async function createStagingDatabase(dryRun: boolean = false) {
         console.log(`      Will copy: ${sourceCount} documents\n`)
       }
       console.log('✅ Dry run completed\n')
-      return { success: true, dryRun: true }
+      return {
+        timestamp,
+        sourceDb: 'melinux_emp',
+        targetDb: 'melinux_emp_stage',
+        results: [],
+        totalCopied: 0,
+        totalDuration: Date.now() - startTime,
+        success: true,
+        dryRun: true,
+      }
     }
 
     // Perform actual copy
