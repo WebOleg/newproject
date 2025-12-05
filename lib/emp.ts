@@ -24,9 +24,13 @@ export type CompanyConfig = {
  * Uses environment variables or reasonable defaults
  */
 export function getDefaultCompanyConfig(): CompanyConfig {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'http://localhost:3000'
+  // Build base URL with proper fallback logic
+  let baseUrl = 'http://localhost:3000'
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    baseUrl = process.env.NEXT_PUBLIC_BASE_URL
+  } else if (process.env.VERCEL_URL) {
+    baseUrl = `https://${process.env.VERCEL_URL}`
+  }
 
   return {
     name: process.env.DEFAULT_COMPANY_NAME || 'Tether Payment System',
