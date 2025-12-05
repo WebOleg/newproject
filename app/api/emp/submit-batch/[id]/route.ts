@@ -4,7 +4,7 @@ export const revalidate = 0
 export const maxDuration = 800 // 800 seconds for bulk processing
 import { getMongoClient, getDbName } from '@/lib/db'
 import { ObjectId } from 'mongodb'
-import { mapRecordToSddSale, type FieldMapping, stripRetrySuffix, buildRetryTransactionId, type CompanyConfig } from '@/lib/emp'
+import { mapRecordToSddSale, type FieldMapping, stripRetrySuffix, buildRetryTransactionId, type CompanyConfig, getDefaultCompanyConfig } from '@/lib/emp'
 import { submitSddSale, maskIban, type SddSaleResponse } from '@/lib/emerchantpay'
 import { reconcileTransaction } from '@/lib/emerchantpay-reconcile'
 import { requireWriteAccess } from '@/lib/auth'
@@ -66,7 +66,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const settingsDoc = await settings.findOne({ _id: 'field-mapping' as any })
     const customMapping = settingsDoc?.mapping as FieldMapping | null
 
-    // Fetch account settings if assigned
+    // Fetch account settings if assigned, otherwise use default config
     let companyConfig: CompanyConfig | null = null
     if (doc.accountId) {
       const account = await accounts.findOne({ _id: new ObjectId(doc.accountId) }) as any
@@ -79,6 +79,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
           fallbackDescription: account.fallbackDescription,
         }
       }
+    }
+
+    // Use default config if no account is assigned (e.g., superOwner uploads)
+    if (!companyConfig) {
+      companyConfig = getDefaultCompanyConfig()
     }
 
     const records: Record<string, string>[] = doc.records || []

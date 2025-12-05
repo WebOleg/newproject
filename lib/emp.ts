@@ -19,6 +19,33 @@ export type CompanyConfig = {
   fallbackDescription?: string
 }
 
+/**
+ * Get default company config for when no account is assigned (e.g., superOwner uploads)
+ * Uses environment variables or reasonable defaults
+ */
+export function getDefaultCompanyConfig(): CompanyConfig {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3000'
+
+  return {
+    name: process.env.DEFAULT_COMPANY_NAME || 'Tether Payment System',
+    contactEmail: process.env.DEFAULT_CONTACT_EMAIL || 'support@tether.com',
+    returnUrls: {
+      baseUrl,
+      successPath: '/payment/success',
+      failurePath: '/payment/failure',
+      pendingPath: '/payment/pending',
+      cancelPath: '/payment/cancel',
+    },
+    dynamicDescriptor: {
+      merchantName: process.env.DEFAULT_MERCHANT_NAME,
+      merchantUrl: process.env.DEFAULT_MERCHANT_URL,
+    },
+    fallbackDescription: process.env.DEFAULT_FALLBACK_DESCRIPTION || 'Payment Transaction',
+  }
+}
+
 export function parseEmpCsv(csvText: string): EmpRecord[] {
   // Validate input
   if (!csvText || typeof csvText !== 'string') {
