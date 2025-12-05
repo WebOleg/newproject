@@ -10,7 +10,9 @@
     "migrate": "npx tsx scripts/migrate-collections.ts",
     "migrate:dry-run": "npx tsx scripts/migrate-collections.ts --dry-run",
     "backup": "npx tsx scripts/backup-collections.ts",
-    "verify": "npx tsx scripts/verify-migration.ts"
+    "verify": "npx tsx scripts/verify-migration.ts",
+    "create-staging": "npx tsx scripts/create-staging-db.ts",
+    "create-staging:dry-run": "npx tsx scripts/create-staging-db.ts --dry-run"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

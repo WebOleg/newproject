@@ -1,3 +1,8 @@
+node_modules
+.local
+.next
+.replit
+
 
 # ---------------------------------------
 # Node & pnpm
@@ -55,3 +60,10 @@ Thumbs.db
 coverage/
 storybook-static/
 *.tsbuildinfo
+
+# ---------------------------------------
+# Backups and temp files
+# ---------------------------------------
+*.tar.gz
+backups/
+tmp/
