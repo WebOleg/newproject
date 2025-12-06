@@ -22,6 +22,8 @@ export async function EmpHeader() {
 
     const canManageOrgs = canManageOrganizations(session.role)
 
+    const merchantPortalUrl = process.env.NEXT_PUBLIC_EMP_MERCHANT_PORTAL_URL || 'https://emp.staging.merchant.emerchantpay.net'
+
     const baseNavItems = [
         { href: '/emp/upload', label: 'Upload', icon: 'LayoutDashboard' },
         { href: '/emp/analytics', label: 'Analytics', icon: 'BarChart3' },
@@ -33,8 +35,8 @@ export async function EmpHeader() {
     ] : []
 
     const externalLinks = canManageOrgs ? [
-        { href: 'https://emp.staging.merchant.emerchantpay.net/en/payment_transactions', label: 'Transactions' },
-        { href: 'https://emp.staging.merchant.emerchantpay.net/en/transaction_attempts', label: 'Attempts' },
+        { href: `${merchantPortalUrl}/en/payment_transactions`, label: 'Transactions' },
+        { href: `${merchantPortalUrl}/en/transaction_attempts`, label: 'Attempts' },
     ] : []
 
     return (
@@ -88,13 +90,13 @@ export async function EmpHeader() {
                                     </Link>
                                 </Button>
                                 <Button asChild variant="ghost" size="sm" className="gap-2">
-                                    <a href="https://emp.staging.merchant.emerchantpay.net/en/payment_transactions" target="_blank" rel="noopener noreferrer">
+                                    <a href={`${merchantPortalUrl}/en/payment_transactions`} target="_blank" rel="noopener noreferrer">
                                         <ExternalLink className="h-4 w-4" />
                                         Transactions
                                     </a>
                                 </Button>
                                 <Button asChild variant="ghost" size="sm" className="gap-2">
-                                    <a href="https://emp.staging.merchant.emerchantpay.net/en/transaction_attempts" target="_blank" rel="noopener noreferrer">
+                                    <a href={`${merchantPortalUrl}/en/transaction_attempts`} target="_blank" rel="noopener noreferrer">
                                         <ExternalLink className="h-4 w-4" />
                                         Attempts
                                     </a>

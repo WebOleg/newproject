@@ -44,9 +44,11 @@ export function EmpHeader() {
 
   const navItems = [...baseNavItems, ...adminNavItems]
 
+  const merchantPortalUrl = process.env.NEXT_PUBLIC_EMP_MERCHANT_PORTAL_URL || 'https://emp.staging.merchant.emerchantpay.net'
+
   const externalLinks = canManageOrgs ? [
-    { href: 'https://emp.staging.merchant.emerchantpay.net/en/payment_transactions', label: 'Transactions' },
-    { href: 'https://emp.staging.merchant.emerchantpay.net/en/transaction_attempts', label: 'Attempts' },
+    { href: `${merchantPortalUrl}/en/payment_transactions`, label: 'Transactions' },
+    { href: `${merchantPortalUrl}/en/transaction_attempts`, label: 'Attempts' },
   ] : []
 
   const isActive = (href: string) => {
@@ -214,7 +216,7 @@ export function EmpHeader() {
             className="gap-2"
             style={{ visibility: canManageOrgs ? 'visible' : 'hidden' }}
           >
-            <a href="https://emp.staging.merchant.emerchantpay.net/en/payment_transactions" target="_blank" rel="noopener noreferrer">
+            <a href={`${merchantPortalUrl}/en/payment_transactions`} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4" />
               Transactions
             </a>
@@ -226,7 +228,7 @@ export function EmpHeader() {
             className="gap-2"
             style={{ visibility: canManageOrgs ? 'visible' : 'hidden' }}
           >
-            <a href="https://emp.staging.merchant.emerchantpay.net/en/transaction_attempts" target="_blank" rel="noopener noreferrer">
+            <a href={`${merchantPortalUrl}/en/transaction_attempts`} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4" />
               Attempts
             </a>

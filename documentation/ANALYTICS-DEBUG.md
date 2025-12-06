@@ -50,11 +50,13 @@ When you load the analytics page, look for these logs:
 ### 2. If Still No Data, Check:
 
 #### A. Merchant Portal
-1. Log into: https://emp.staging.merchant.emerchantpay.net
+1. Log into the merchant portal (URL set in NEXT_PUBLIC_EMP_MERCHANT_PORTAL_URL)
+   - Production: https://emp.merchant.emerchantpay.net
+   - Staging: https://emp.staging.merchant.emerchantpay.net
 2. Go to "Payment Transactions"
 3. **Do you see any transactions there?**
    - If YES → API credentials might be for different merchant
-   - If NO → No data exists in staging
+   - If NO → No data exists in the environment
 
 #### B. Environment Variables
 Check your `.env` file:
