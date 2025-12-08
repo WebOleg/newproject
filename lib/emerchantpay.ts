@@ -209,9 +209,11 @@ export async function submitSddSale(req: SddSaleRequest): Promise<SddSaleRespons
       transactionId: req.transactionId,
       amountMinor: req.amountMinor,
       currency: req.currency,
+      firstName: req.firstName,
+      lastName: req.lastName,
       iban: maskIban(req.iban),
     })
-    //console.info('[EMP] Raw XML Request:\n', xml)
+    console.info('[EMP] Raw XML Request:\n', xml)
   } catch {}
   const res = await fetch(endpoint, {
     method: 'POST',
@@ -224,10 +226,10 @@ export async function submitSddSale(req: SddSaleRequest): Promise<SddSaleRespons
     // Next: keepalive short timeout may be necessary in production
   })
   const text = await res.text()
-  
-  //try {
-  //  console.info('[EMP] Raw XML Response:\n', text)
-  //} catch {}
+
+  try {
+    console.info('[EMP] Raw XML Response:\n', text)
+  } catch {}
   
   // Minimal XML parsing to extract a few fields
   const pick = (tag: string) => {

@@ -339,8 +339,9 @@ export function mapRecordToSddSale(
       const fullName = getField([nameField])
       if (fullName) {
         const parts = splitFullName(fullName)
-        if (!firstName) firstName = parts.firstName
-        if (!lastName) lastName = parts.lastName
+        // When splitting a full name, use both parts (don't mix split result with mapped fields)
+        firstName = parts.firstName
+        lastName = parts.lastName
       }
     }
   }
