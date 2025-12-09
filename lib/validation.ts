@@ -2,11 +2,7 @@
  * CSV Row Validation
  * Flexible validation supporting multiple column naming conventions
  */
-
 import { getFieldValue, getFullAddress, getFullName, getCountry } from './field-aliases'
-
-// Broken UTF-8 encoding patterns (mojibake)
-const INVALID_CHAR_PATTERN = /[\uFFFD\u00EF\u00BF\u00BD]|Ã[€‚ƒ„…†‡ˆ‰Š‹ŒŽ''""•–—˜™š›œžŸ¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏ]|Ã‚|Ã„|Ã'|Â[^\s]/
 
 // Invalid characters in names (numbers, special symbols)
 const INVALID_NAME_PATTERN = /[0-9*#@$%^&+=\[\]{}|\\<>]/
@@ -42,24 +38,41 @@ function isInvalidZip(zip: string | undefined): boolean {
 
 /**
  * Check for common encoding issues (mojibake)
- * Examples: Ã±, Ã', Â, etc. instead of ñ, Ñ
+ * Uses whitelist approach - only allow valid name characters
  */
 function hasEncodingIssue(value: string | undefined): boolean {
   if (!value) return false
   
-  // Common broken UTF-8 patterns
-  const brokenPatterns = [
-    /Ã[±']/,           // ñ, Ñ broken
-    /Ã[¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿]/,  // Various broken chars
-    /Ã[ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏ]/,  // Uppercase broken
-    /Ã[àáâãäåæçèéêëìíîï]/,  // Lowercase broken
-    /Â[^\s\w]/,        // Â followed by special char
-    /Ä[^\s\w]/,        // Ä followed by special char
+  // Allowed characters in names:
+  // - Letters (including accented: áéíóúñüöäàèìòù etc.)
+  // - Spaces, hyphens, apostrophes
+  // - Dots (for initials like "J. Smith")
+  
+  // Check for common mojibake patterns (broken UTF-8)
+  const mojibakePatterns = [
+    /Ã[^\s]/,          // Ã followed by anything (Ã±, Ã', Ã¡, etc.)
+    /Â[^\s]/,          // Â followed by anything
+    /Ã‚/,              // Common pattern
+    /Ã„/,              // Common pattern
+    /Ã'/,              // Ñ broken
+    /Ã±/,              // ñ broken
+    /Ã©/,              // é broken
+    /Ã¡/,              // á broken
+    /Ã­/,              // í broken
+    /Ã³/,              // ó broken
+    /Ãº/,              // ú broken
+    /â€/,              // Quote marks broken
+    /Ã¼/,              // ü broken
+    /Ã¶/,              // ö broken
+    /Ã¤/,              // ä broken
     /[\uFFFD]/,        // Replacement character
     /ï¿½/,             // Common mojibake
+    /Ëœ/,              // Tilde broken
+    /â€™/,             // Apostrophe broken
+    /â€"/,             // Dash broken
   ]
   
-  return brokenPatterns.some(pattern => pattern.test(value))
+  return mojibakePatterns.some(pattern => pattern.test(value))
 }
 
 export function validateAmount(amount: string | undefined): { valid: boolean; error?: string } {
