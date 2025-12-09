@@ -38,38 +38,24 @@ function isInvalidZip(zip: string | undefined): boolean {
 
 /**
  * Check for common encoding issues (mojibake)
- * Uses whitelist approach - only allow valid name characters
+ * Detects broken UTF-8 in any text field
  */
 function hasEncodingIssue(value: string | undefined): boolean {
   if (!value) return false
   
-  // Allowed characters in names:
-  // - Letters (including accented: áéíóúñüöäàèìòù etc.)
-  // - Spaces, hyphens, apostrophes
-  // - Dots (for initials like "J. Smith")
-  
   // Check for common mojibake patterns (broken UTF-8)
   const mojibakePatterns = [
-    /Ã[^\s]/,          // Ã followed by anything (Ã±, Ã', Ã¡, etc.)
-    /Â[^\s]/,          // Â followed by anything
-    /Ã‚/,              // Common pattern
-    /Ã„/,              // Common pattern
-    /Ã'/,              // Ñ broken
-    /Ã±/,              // ñ broken
-    /Ã©/,              // é broken
-    /Ã¡/,              // á broken
-    /Ã­/,              // í broken
-    /Ã³/,              // ó broken
-    /Ãº/,              // ú broken
+    /Ã[^\s]/,          // Ã followed by anything
+    /Â[^\s]/,          // Â followed by anything  
+    /ï¿½/,             // Common replacement (�)
     /â€/,              // Quote marks broken
-    /Ã¼/,              // ü broken
-    /Ã¶/,              // ö broken
-    /Ã¤/,              // ä broken
-    /[\uFFFD]/,        // Replacement character
-    /ï¿½/,             // Common mojibake
     /Ëœ/,              // Tilde broken
-    /â€™/,             // Apostrophe broken
-    /â€"/,             // Dash broken
+    /[\uFFFD]/,        // Unicode replacement character
+    /Ã‚/,              // Â broken
+    /Ã„/,              // Ä broken
+    /¿½/,              // Partial replacement
+    /Â½/,              // ½ broken
+    /Â¿/,              // ¿ broken
   ]
   
   return mojibakePatterns.some(pattern => pattern.test(value))
@@ -122,6 +108,8 @@ export function validateRequiredFields(row: Record<string, any>): { valid: boole
     errors.push('Address is required')
   } else if (isPlaceholder(address)) {
     errors.push('Address contains placeholder value (unknown)')
+  } else if (hasEncodingIssue(address)) {
+    errors.push('Address contains encoding issues (broken characters)')
   }
   
   // Postal Code
@@ -140,6 +128,8 @@ export function validateRequiredFields(row: Record<string, any>): { valid: boole
     errors.push('City is required')
   } else if (isPlaceholder(city)) {
     errors.push('City contains placeholder value')
+  } else if (hasEncodingIssue(city)) {
+    errors.push('City contains encoding issues (broken characters)')
   }
   
   // Country - from column or IBAN fallback
