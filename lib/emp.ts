@@ -232,7 +232,7 @@ const DEFAULT_MAPPING: FieldMapping = {
   address1: ['customerstreet', 'Street', 'address1', 'street', 'Address', 'Strasse', 'Straße', 'Adresszusatz', 'Street Address'],
   zipCode: ['customerzip', 'Zip', 'zip_code', 'zip', 'Postal Code', 'PostalCode', 'Postcode', 'PLZ', 'ZIP', 'ZIP Code'],
   city: ['customercity', 'City', 'city', 'Ort', 'Town', 'Locality'],
-  country: ['customercountry', 'CustomerCountry', 'country', 'accountcountry', 'Country', 'Province', 'State', 'Region', 'Land'],
+  country: ['customercountry', 'CustomerCountry', 'country', 'accountcountry', 'Country', 'Land'],
   email: ['customeremail', 'Email', 'customer_email', 'email', 'E-mail'],
   iban: ['iban', 'Iban', 'IBAN', 'Account', 'Bank Account'],
   remoteIp: ['merchantip', 'customerip', 'IP', 'remote_ip', 'ip'],
@@ -302,6 +302,16 @@ function getCountryFromIBAN(iban: string): string {
     return code
   }
   return ''
+}
+
+/**
+ * Check if value is a valid ISO 2-letter country code
+ */
+function isValidCountryCode(value: string): boolean {
+  if (!value) return false
+  const trimmed = value.trim().toUpperCase()
+  // Must be exactly 2 uppercase letters
+  return /^[A-Z]{2}$/.test(trimmed)
 }
 
 export function mapRecordToSddSale(
@@ -396,9 +406,15 @@ export function mapRecordToSddSale(
 
   const transactionId = `txn_${Date.now()}_${rowIndex}_${Math.random().toString(36).substring(7)}`
 
-  // Get country - fallback to IBAN prefix if not found
+  // Get country - check if valid 2-letter code, otherwise fallback to IBAN prefix
   let country = getField(mapping.country)
-  if (!country) {
+  
+  // If country value is not a valid 2-letter code (e.g., "Barcelona", "Huelva"), use IBAN
+  if (!isValidCountryCode(country)) {
+    console.log('=== [DEBUG] Country not valid code, using IBAN fallback ===', {
+      foundValue: country,
+      ibanPrefix: iban.substring(0, 2)
+    })
     country = getCountryFromIBAN(iban)
   }
 
