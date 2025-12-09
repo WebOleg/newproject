@@ -40,6 +40,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertTriangle } from 'lucide-react'
 import { useSession } from '@/contexts/session-context'
+import { validateRows } from '@/lib/validation'
 
 interface UploadDetailClientProps {
   id: string
@@ -80,11 +81,23 @@ export function UploadDetailClient({
     router.refresh()
   }
 
-  // Memoize row statuses and errors for performance
-  const rowData = useMemo(() => ({
-    statuses: rows.map((r: any) => r?.status || 'pending'),
-    errors: rows.map((r: any) => r?.empError || r?.emp?.technicalMessage || r?.emp?.message)
-  }), [rows])
+  const validation = useMemo(() => validateRows(records), [records])
+
+  const rowData = useMemo(() => {
+    const statuses = rows.map((r: any, index: number) => {
+      const hasValidationError = validation.invalidRows.some(inv => inv.index === index)
+      if (hasValidationError && r?.status !== 'approved') return 'validation_error'
+      return r?.status || 'pending'
+    })
+    
+    const errors = rows.map((r: any, index: number) => {
+      const validationError = validation.invalidRows.find(inv => inv.index === index)
+      if (validationError) return validationError.errors.join(', ')
+      return r?.empError || r?.emp?.technicalMessage || r?.emp?.message
+    })
+    
+    return { statuses, errors }
+  }, [rows, validation])
 
   const resetAction = useAsyncAction(
     async () => {
@@ -166,7 +179,6 @@ export function UploadDetailClient({
     await voidAction.execute()
   }
 
-  // Manual void dialog state
   const [uniqueId, setUniqueId] = useState('')
   const [transactionId, setTransactionId] = useState('')
   const [isManualVoiding, setIsManualVoiding] = useState(false)
@@ -215,7 +227,6 @@ export function UploadDetailClient({
     }
   }
 
-  // Filter chargebacks state
   const [isFilteringChargebacks, setIsFilteringChargebacks] = useState(false)
 
   const handleFilterChargebacks = async () => {
@@ -273,9 +284,15 @@ export function UploadDetailClient({
                   <span className="font-medium text-green-600 dark:text-green-500">{approvedCount}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4 text-red-600 dark:text-red-500" />
+                  <XCircle className="h-4 w-4 text-red-600 dark:text-red-500" />
                   <span className="font-medium text-red-600 dark:text-red-500">{errorCount}</span>
                 </div>
+                {validation.invalidRows.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                    <span className="font-medium text-orange-500">{validation.invalidRows.length} invalid</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span className="hidden sm:inline text-sm">{new Date(createdAt).toLocaleString()}</span>
@@ -289,6 +306,7 @@ export function UploadDetailClient({
                 <BatchSyncButton
                   uploadId={id}
                   totalRecords={recordCount}
+                  rows={records}
                   onComplete={handleRefresh}
                 />
               )}
@@ -416,7 +434,6 @@ export function UploadDetailClient({
         </CardContent>
       </Card>
 
-      {/* Manual Void Dialog */}
       <Dialog open={manualVoidOpen} onOpenChange={setManualVoidOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -494,7 +511,6 @@ export function UploadDetailClient({
         </DialogContent>
       </Dialog>
 
-      {/* Filter Chargebacks Dialog */}
       <AlertDialog open={filterChargebacksOpen} onOpenChange={setFilterChargebacksOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -537,7 +553,6 @@ export function UploadDetailClient({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Show Filtered Rows Dialog */}
       <Dialog open={showFilteredRowsOpen} onOpenChange={setShowFilteredRowsOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
           <DialogHeader>
@@ -565,53 +580,51 @@ export function UploadDetailClient({
         </DialogContent>
       </Dialog>
 
-      {
-        reconciliationReport && (
-          <Card className="border-border/40 shadow-sm">
-            <CardContent className="p-4 sm:p-6">
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                  <h3 className="text-base sm:text-lg font-semibold">Reconciliation Report</h3>
-                  {lastReconciledAt && (
-                    <span className="text-xs sm:text-sm text-muted-foreground">
-                      Last: {new Date(lastReconciledAt).toLocaleString()}
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
-                  <div className="space-y-1 p-3 rounded-lg bg-muted/30">
-                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">Total</p>
-                    <p className="text-xl sm:text-2xl font-bold">{reconciliationReport.total}</p>
-                  </div>
-                  <div className="space-y-1 p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
-                    <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium">Approved</p>
-                    <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{reconciliationReport.approved}</p>
-                  </div>
-                  <div className="space-y-1 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
-                    <p className="text-xs sm:text-sm text-yellow-600 dark:text-yellow-400 font-medium">Pending</p>
-                    <p className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{reconciliationReport.pending}</p>
-                  </div>
-                  <div className="space-y-1 p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
-                    <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 font-medium">Errors</p>
-                    <p className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{reconciliationReport.error}</p>
-                  </div>
-                  <div className="space-y-1 p-3 rounded-lg bg-muted/30">
-                    <p className="text-xs sm:text-sm text-muted-foreground font-medium">Not Sent</p>
-                    <p className="text-xl sm:text-2xl font-bold">{reconciliationReport.notSubmitted}</p>
-                  </div>
-                </div>
-                {reconciliationReport.missingInEmp?.length > 0 && (
-                  <div className="p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800/50 rounded-lg">
-                    <p className="text-xs sm:text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                      ⚠️ {reconciliationReport.missingInEmp.length} transaction(s) submitted but not found in EMP
-                    </p>
-                  </div>
+      {reconciliationReport && (
+        <Card className="border-border/40 shadow-sm">
+          <CardContent className="p-4 sm:p-6">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <h3 className="text-base sm:text-lg font-semibold">Reconciliation Report</h3>
+                {lastReconciledAt && (
+                  <span className="text-xs sm:text-sm text-muted-foreground">
+                    Last: {new Date(lastReconciledAt).toLocaleString()}
+                  </span>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        )
-      }
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+                <div className="space-y-1 p-3 rounded-lg bg-muted/30">
+                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">Total</p>
+                  <p className="text-xl sm:text-2xl font-bold">{reconciliationReport.total}</p>
+                </div>
+                <div className="space-y-1 p-3 rounded-lg bg-green-50 dark:bg-green-950/20">
+                  <p className="text-xs sm:text-sm text-green-600 dark:text-green-400 font-medium">Approved</p>
+                  <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{reconciliationReport.approved}</p>
+                </div>
+                <div className="space-y-1 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
+                  <p className="text-xs sm:text-sm text-yellow-600 dark:text-yellow-400 font-medium">Pending</p>
+                  <p className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{reconciliationReport.pending}</p>
+                </div>
+                <div className="space-y-1 p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
+                  <p className="text-xs sm:text-sm text-red-600 dark:text-red-400 font-medium">Errors</p>
+                  <p className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{reconciliationReport.error}</p>
+                </div>
+                <div className="space-y-1 p-3 rounded-lg bg-muted/30">
+                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">Not Sent</p>
+                  <p className="text-xl sm:text-2xl font-bold">{reconciliationReport.notSubmitted}</p>
+                </div>
+              </div>
+              {reconciliationReport.missingInEmp?.length > 0 && (
+                <div className="p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800/50 rounded-lg">
+                  <p className="text-xs sm:text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                    ⚠️ {reconciliationReport.missingInEmp.length} transaction(s) submitted but not found in EMP
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border-border/40 shadow-sm">
         <CardContent className="p-4 sm:p-6">
@@ -626,6 +639,10 @@ export function UploadDetailClient({
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-red-500 dark:bg-red-600 rounded-sm shadow-sm"></div>
                   <span className="text-muted-foreground">Error</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-orange-400 dark:bg-orange-500 rounded-sm shadow-sm"></div>
+                  <span className="text-muted-foreground">Invalid</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-gray-400 dark:bg-gray-600 rounded-sm shadow-sm"></div>
@@ -657,6 +674,6 @@ export function UploadDetailClient({
           </Link>
         </Button>
       </div>
-    </div >
+    </div>
   )
 }

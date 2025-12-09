@@ -4,14 +4,16 @@ import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
+import { validateRows } from '@/lib/validation'
 
 interface BatchSyncButtonProps {
   uploadId: string
   totalRecords: number
+  rows?: any[]
   onComplete?: () => void
 }
 
-export function BatchSyncButton({ uploadId, totalRecords, onComplete }: BatchSyncButtonProps) {
+export function BatchSyncButton({ uploadId, totalRecords, rows = [], onComplete }: BatchSyncButtonProps) {
   const [syncing, setSyncing] = useState(false)
   const beforeUnloadRef = useRef<(() => void) | null>(null)
 
@@ -36,10 +38,19 @@ export function BatchSyncButton({ uploadId, totalRecords, onComplete }: BatchSyn
   }
 
   const submitBulk = async () => {
+    if (rows.length > 0) {
+      const validation = validateRows(rows)
+      if (!validation.valid) {
+        const firstError = validation.invalidRows[0]
+        toast.error(`Row ${firstError.index + 1}: ${firstError.errors[0]}`, { duration: 5000 })
+        return
+      }
+    }
+
     setSyncing(true)
     
     try {
-      toast.info(`Submitting ${totalRecords} transactions in bulk. Please keep this page open until the process finishes.`)
+      toast.info(`Submitting ${totalRecords} transactions...`)
       setBeforeUnload()
       
       const res = await fetch(`/api/emp/submit-batch/${uploadId}`, {
@@ -53,26 +64,25 @@ export function BatchSyncButton({ uploadId, totalRecords, onComplete }: BatchSyn
         throw new Error(data?.error || 'Bulk submission failed')
       }
 
-      // Show success summary
       const successCount = data.approved || 0
       const summaryErrorCount = data.errors || 0
       const runtime = data.runtime ? `${Math.round(data.runtime / 1000)}s` : ''
       
       if (summaryErrorCount > 0) {
         toast.warning(
-          `✅ Submission complete${runtime ? ` in ${runtime}` : ''}: ${successCount} approved, ${summaryErrorCount} failed. Check the table for error details.`,
-          { duration: 8000 }
+          `Done: ${successCount} approved, ${summaryErrorCount} failed`,
+          { duration: 5000 }
         )
       } else {
         toast.success(
-          `🎉 All done${runtime ? ` in ${runtime}` : ''}! ${successCount} transactions submitted successfully.`,
+          `Done! ${successCount} transactions submitted`,
           { duration: 5000 }
         )
       }
 
       if (onComplete) onComplete()
     } catch (err: any) {
-      toast.error(`❌ Submission failed: ${err?.message || 'Unknown error'}. Please try again.`)
+      toast.error(err?.message || 'Submission failed')
     } finally {
       setSyncing(false)
       clearBeforeUnload()
@@ -91,4 +101,3 @@ export function BatchSyncButton({ uploadId, totalRecords, onComplete }: BatchSyn
     </Button>
   )
 }
-

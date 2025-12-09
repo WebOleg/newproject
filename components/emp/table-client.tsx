@@ -4,7 +4,7 @@ import React, { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EditRowDialog } from '@/components/emp/edit-row-dialog'
-import { RefreshCw, AlertCircle, Trash2 } from 'lucide-react'
+import { RefreshCw, AlertCircle, AlertTriangle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 type Props = {
@@ -12,7 +12,7 @@ type Props = {
   subtitle?: string
   headers: string[]
   records: Record<string, string>[]
-  rowStatuses?: Array<'pending' | 'approved' | 'error' | undefined>
+  rowStatuses?: Array<'pending' | 'approved' | 'error' | 'validation_error' | undefined>
   rowErrors?: Array<string | undefined>
   uploadId?: string
   onRowEdited?: () => void
@@ -39,12 +39,10 @@ export function TableClient({ title, subtitle, headers, records, rowStatuses, ro
     return filtered.slice(start, start + itemsPerPage)
   }, [filtered, currentPage])
 
-  // Reset page when query changes
   useMemo(() => {
     setCurrentPage(1)
   }, [query])
 
-  // State for editing
   const [editingRow, setEditingRow] = useState<{ index: number; record: Record<string, string> } | null>(null)
 
   function exportCsv() {
@@ -61,12 +59,15 @@ export function TableClient({ title, subtitle, headers, records, rowStatuses, ro
     URL.revokeObjectURL(url)
   }
 
-  function getRowClassName(status?: 'pending' | 'approved' | 'error'): string {
+  function getRowClassName(status?: 'pending' | 'approved' | 'error' | 'validation_error'): string {
     if (status === 'approved') {
       return 'bg-green-50/50 dark:bg-green-950/20 border-l-2 border-l-green-500'
     }
     if (status === 'error') {
       return 'bg-red-50/50 dark:bg-red-950/20 border-l-2 border-l-red-500'
+    }
+    if (status === 'validation_error') {
+      return 'bg-orange-50/50 dark:bg-orange-950/20 border-l-2 border-l-orange-400'
     }
     return 'bg-muted/20 border-l-2 border-l-gray-300 dark:border-l-gray-600'
   }
@@ -112,6 +113,7 @@ export function TableClient({ title, subtitle, headers, records, rowStatuses, ro
               const status = rowStatuses?.[originalIndex]
               const errorMsg = rowErrors?.[originalIndex]
               const rowClass = getRowClassName(status)
+              const isValidationError = status === 'validation_error'
 
               const handleResubmit = async () => {
                 try {
@@ -149,11 +151,10 @@ export function TableClient({ title, subtitle, headers, records, rowStatuses, ro
                 }
               }
 
-              // Determine background color for sticky columns based on status
-              // MUST use solid colors (no opacity) to prevent transparency issues
               let stickyClass = 'bg-background'
-              if (status === 'approved') stickyClass = 'bg-[#f0fdf4] dark:bg-[#14532d]' // green-50 / green-900
-              else if (status === 'error') stickyClass = 'bg-[#fef2f2] dark:bg-[#7f1d1d]' // red-50 / red-900
+              if (status === 'approved') stickyClass = 'bg-[#f0fdf4] dark:bg-[#14532d]'
+              else if (status === 'error') stickyClass = 'bg-[#fef2f2] dark:bg-[#7f1d1d]'
+              else if (status === 'validation_error') stickyClass = 'bg-[#fff7ed] dark:bg-[#7c2d12]'
               else stickyClass = 'bg-background'
 
               return (
@@ -217,10 +218,25 @@ export function TableClient({ title, subtitle, headers, records, rowStatuses, ro
                   </tr>
                   {errorMsg && (
                     <tr>
-                      <td colSpan={headers.length + 1} className="py-2 px-3 bg-red-50 dark:bg-red-950/20 border-b border-l-2 border-l-red-500">
-                        <div className="flex items-start gap-2 text-xs text-red-700 dark:text-red-300">
-                          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                          <span className="font-medium">Error:</span>
+                      <td 
+                        colSpan={headers.length + 1} 
+                        className={`py-2 px-3 border-b border-l-2 ${
+                          isValidationError 
+                            ? 'bg-orange-50 dark:bg-orange-950/20 border-l-orange-400' 
+                            : 'bg-red-50 dark:bg-red-950/20 border-l-red-500'
+                        }`}
+                      >
+                        <div className={`flex items-start gap-2 text-xs ${
+                          isValidationError 
+                            ? 'text-orange-700 dark:text-orange-300' 
+                            : 'text-red-700 dark:text-red-300'
+                        }`}>
+                          {isValidationError ? (
+                            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                          )}
+                          <span className="font-medium">{isValidationError ? 'Invalid:' : 'Error:'}</span>
                           <span>{errorMsg}</span>
                         </div>
                       </td>
@@ -238,7 +254,6 @@ export function TableClient({ title, subtitle, headers, records, rowStatuses, ro
         </table>
       </div>
 
-      {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-2">
           <div className="text-sm text-muted-foreground">
@@ -265,7 +280,6 @@ export function TableClient({ title, subtitle, headers, records, rowStatuses, ro
         </div>
       )}
 
-      {/* Lifted Edit Dialog */}
       {editingRow && uploadId && (
         <EditRowDialog
           open={!!editingRow}
@@ -289,5 +303,3 @@ function csvEscape(value: string, delimiter: string): string {
   let v = value.replace(/"/g, '""')
   return needsQuotes ? `"${v}"` : v
 }
-
-
