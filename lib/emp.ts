@@ -225,16 +225,16 @@ export type FieldMapping = {
 
 const DEFAULT_MAPPING: FieldMapping = {
   amount: ['amount', 'Amount', 'ProduktPreis', 'produktpreis', 'Betrag'],
-  currency: ['currency', 'Curr'],
+  currency: ['currency', 'Curr', 'Currency'],
   usage: ['merchantinformation', 'vzweck1', 'Usage', 'usage', 'Produkt', 'Bemerkung'],
   firstName: ['customerfirstname', 'Given', 'first_name', 'given', 'Vorname'],
   lastName: ['customerlastname', 'Family', 'last_name', 'family', 'Name'],
-  address1: ['customerstreet', 'Street', 'address1', 'street', 'Strasse', 'Straße', 'Adresszusatz'],
-  zipCode: ['customerzip', 'Zip', 'zip_code', 'zip', 'PLZ'],
+  address1: ['customerstreet', 'Street', 'address1', 'street', 'Address', 'Strasse', 'Straße', 'Adresszusatz'],
+  zipCode: ['customerzip', 'Zip', 'zip_code', 'zip', 'Postal Code', 'PostalCode', 'PLZ'],
   city: ['customercity', 'City', 'city', 'Ort'],
-  country: ['customercountry', 'CustomerCountry', 'country', 'accountcountry', 'Land'],
+  country: ['customercountry', 'CustomerCountry', 'country', 'accountcountry', 'Country', 'Land'],
   email: ['customeremail', 'Email', 'customer_email', 'email'],
-  iban: ['iban', 'Iban'],
+  iban: ['iban', 'Iban', 'IBAN'],
   remoteIp: ['merchantip', 'customerip', 'IP', 'remote_ip', 'ip'],
   shopperId: ['customerid', 'mandatereference', 'ShopperId', 'shopperid', 'Kundennummer'],
   dueDate: ['mandatesigneddate', 'DueDate', 'duedate', 'Spielbeginn'],
@@ -310,6 +310,13 @@ export function mapRecordToSddSale(
 
   const mapping = mergeMappingDefaults(customMapping)
 
+  // 🔍 DEBUG: Show raw CSV record
+  console.log('=== [DEBUG 1] Raw CSV Record ===', {
+    rowIndex,
+    record,
+    availableFields: Object.keys(record)
+  })
+
   const amountStr = getField(mapping.amount)
   const amount = Math.round(parseFloat(amountStr.replace(',', '.')) * 100)
 
@@ -332,9 +339,17 @@ export function mapRecordToSddSale(
   let firstName = getField(mapping.firstName)
   let lastName = getField(mapping.lastName)
 
+  // 🔍 DEBUG: Show extracted customer name fields
+  console.log('=== [DEBUG 2] Extracted Customer Names ===', {
+    rowIndex,
+    firstName,
+    lastName,
+    mappingUsed: { firstName: mapping.firstName, lastName: mapping.lastName }
+  })
+
   // Fallback: Try to parse from single name field if specific fields are missing
   if (!firstName || !lastName) {
-    const nameField = ['customername', 'name', 'Name', 'CustomerName'].find(f => record[f] || Object.keys(record).find(k => k.toLowerCase() === f.toLowerCase()))
+    const nameField = ['Name.1', 'customername', 'name', 'Name', 'CustomerName'].find(f => record[f] || Object.keys(record).find(k => k.toLowerCase() === f.toLowerCase()))
     if (nameField) {
       const fullName = getField([nameField])
       if (fullName) {
@@ -355,12 +370,20 @@ export function mapRecordToSddSale(
     throw new Error(`Missing IBAN at row ${rowIndex + 1}`)
   }
 
+  // 🔍 DEBUG: Show extracted IBAN
+  console.log('=== [DEBUG 3] Extracted IBAN ===', {
+    rowIndex,
+    iban: iban.slice(0, 4) + '****' + iban.slice(-4), // Masked for security
+    ibanLength: iban.length,
+    mappingUsed: mapping.iban
+  })
+
   // Use provided config
   const config = companyConfig
 
   const transactionId = `txn_${Date.now()}_${rowIndex}_${Math.random().toString(36).substring(7)}`
 
-  return {
+  const sddRequest = {
     transactionId,
     usage,
     remoteIp: getField(mapping.remoteIp) || '127.0.0.1',
@@ -376,6 +399,20 @@ export function mapRecordToSddSale(
     dynamicDescriptorParams: config?.dynamicDescriptor,
     customReturnUrls: config?.returnUrls,
   }
+
+  // 🔍 DEBUG: Show final SddSaleRequest being returned
+  console.log('=== [DEBUG 4] Final SddSaleRequest ===', {
+    rowIndex,
+    transactionId: sddRequest.transactionId,
+    firstName: sddRequest.firstName,
+    lastName: sddRequest.lastName,
+    iban: sddRequest.iban.slice(0, 4) + '****' + sddRequest.iban.slice(-4),
+    address1: sddRequest.address1,
+    amount: sddRequest.amountMinor,
+    currency: sddRequest.currency,
+  })
+
+  return sddRequest
 }
 
 function buildTransactionId(shopperId: string, dueDate: string, index: number): string {

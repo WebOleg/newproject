@@ -110,15 +110,28 @@ function xmlEscape(value: string): string {
 }
 
 export function buildSddSaleXml(req: SddSaleRequest): string {
+  // 🔍 DEBUG: Show what data we're building XML from
+  console.log('=== [DEBUG 5] Building XML from Request ===', {
+    transactionId: req.transactionId,
+    firstName: req.firstName,
+    lastName: req.lastName,
+    iban: maskIban(req.iban),
+    address1: req.address1,
+    city: req.city,
+    country: req.country,
+    amount: req.amountMinor,
+    currency: req.currency,
+  })
+
   const notificationUrl = process.env.EMP_NOTIFICATION_URL || ''
-  
+
   // Determine return URL base and paths (custom or default)
   let returnUrlBase: string
   let successPath: string
   let failurePath: string
   let pendingPath: string
   let cancelPath: string
-  
+
   if (req.customReturnUrls?.baseUrl) {
     // Use custom URLs (for BestWin, etc.)
     returnUrlBase = req.customReturnUrls.baseUrl.replace(/\/$/, '') // Remove trailing slash
@@ -134,17 +147,17 @@ export function buildSddSaleXml(req: SddSaleRequest): string {
     pendingPath = '/pending'
     cancelPath = '/cancel'
   }
-  
+
   const ret = (p: string) => (returnUrlBase ? `${returnUrlBase}${p}` : '')
 
   // Build dynamic descriptor params XML
   const dynamicDescriptorXml: string[] = []
   if (req.dynamicDescriptorParams) {
     const d = req.dynamicDescriptorParams
-    if (d.merchantName || d.merchantCity || d.subMerchantId || d.merchantCountry || d.merchantState || 
-        d.merchantZipCode || d.merchantAddress || d.merchantUrl || d.merchantPhone || d.merchantServiceCity ||
-        d.merchantServiceCountry || d.merchantServiceState || d.merchantServiceZipCode || d.merchantServicePhone ||
-        d.merchantGeoCoordinates || d.merchantServiceGeoCoordinates) {
+    if (d.merchantName || d.merchantCity || d.subMerchantId || d.merchantCountry || d.merchantState ||
+      d.merchantZipCode || d.merchantAddress || d.merchantUrl || d.merchantPhone || d.merchantServiceCity ||
+      d.merchantServiceCountry || d.merchantServiceState || d.merchantServiceZipCode || d.merchantServicePhone ||
+      d.merchantGeoCoordinates || d.merchantServiceGeoCoordinates) {
       dynamicDescriptorXml.push('<dynamic_descriptor_params>')
       if (d.merchantName) dynamicDescriptorXml.push(`<merchant_name>${xmlEscape(d.merchantName.substring(0, 25))}</merchant_name>`)
       if (d.merchantCity) dynamicDescriptorXml.push(`<merchant_city>${xmlEscape(d.merchantCity.substring(0, 13))}</merchant_city>`)
@@ -166,7 +179,7 @@ export function buildSddSaleXml(req: SddSaleRequest): string {
     }
   }
 
-  return [
+  const xml = [
     '<payment_transaction>',
     '<transaction_type>sdd_sale</transaction_type>',
     `<transaction_id>${xmlEscape(req.transactionId)}</transaction_id>`,
@@ -192,6 +205,16 @@ export function buildSddSaleXml(req: SddSaleRequest): string {
     ...dynamicDescriptorXml,
     '</payment_transaction>',
   ].filter(Boolean).join('')
+
+  // 🔍 DEBUG: Show the final XML (with sensitive data masked)
+  const xmlPreview = xml.replace(/<iban>([^<]+)<\/iban>/, (_match: string, iban: string) => {
+    const masked = iban.slice(0, 4) + '****' + iban.slice(-4)
+    return `<iban>${masked}</iban>`
+  })
+  console.log('=== [DEBUG 6] Final XML Being Sent ===')
+  console.log(xmlPreview)
+
+  return xml
 }
 
 export async function submitSddSale(req: SddSaleRequest): Promise<SddSaleResponse> {
@@ -199,7 +222,7 @@ export async function submitSddSale(req: SddSaleRequest): Promise<SddSaleRespons
   try {
     const { submitSddSaleSdk } = await import('@/lib/emerchantpay-sdk')
     return await submitSddSaleSdk(req)
-  } catch {}
+  } catch { }
   const { endpoint, username, password } = getConfig()
   const xml = buildSddSaleXml(req)
   const auth = Buffer.from(`${username}:${password}`).toString('base64')
@@ -211,10 +234,13 @@ export async function submitSddSale(req: SddSaleRequest): Promise<SddSaleRespons
       currency: req.currency,
       firstName: req.firstName,
       lastName: req.lastName,
+      address: req.address1,
       iban: maskIban(req.iban),
     })
-    console.info('[EMP] Raw XML Request:\n', xml)
-  } catch {}
+    // Note: The actual XML is already logged in buildSddSaleXml with DEBUG 6
+    // Uncomment below if you need to see it again here:
+    // console.info('[EMP] Raw XML Request:\n', xml)
+  } catch { }
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -229,8 +255,8 @@ export async function submitSddSale(req: SddSaleRequest): Promise<SddSaleRespons
 
   try {
     console.info('[EMP] Raw XML Response:\n', text)
-  } catch {}
-  
+  } catch { }
+
   // Minimal XML parsing to extract a few fields
   const pick = (tag: string) => {
     const m = text.match(new RegExp(`<${tag}>([\s\S]*?)</${tag}>`))
@@ -252,7 +278,7 @@ export async function submitSddSale(req: SddSaleRequest): Promise<SddSaleRespons
       message,
       technicalMessage,
     })
-  } catch {}
+  } catch { }
   return { ok: res.ok, status, uniqueId, redirectUrl, message, technicalMessage }
 }
 
@@ -284,7 +310,7 @@ export function createDynamicDescriptorFromCsv(
 ): DynamicDescriptorParams | undefined {
   const descriptor = productDescriptor || vzweck1
   if (!descriptor) return undefined
-  
+
   return {
     merchantName: descriptor.substring(0, 25), // Truncate to max 25 chars as per API spec
   }
