@@ -224,19 +224,19 @@ export type FieldMapping = {
 }
 
 const DEFAULT_MAPPING: FieldMapping = {
-  amount: ['amount', 'Amount', 'ProduktPreis', 'produktpreis', 'Betrag'],
+  amount: ['amount', 'Amount', 'ProduktPreis', 'produktpreis', 'Betrag', 'Sum', 'Total', 'Value', 'Debt', 'Balance'],
   currency: ['currency', 'Curr', 'Currency'],
   usage: ['merchantinformation', 'vzweck1', 'Usage', 'usage', 'Produkt', 'Bemerkung'],
-  firstName: ['customerfirstname', 'Given', 'first_name', 'given', 'Vorname'],
-  lastName: ['customerlastname', 'Family', 'last_name', 'family', 'Name'],
-  address1: ['customerstreet', 'Street', 'address1', 'street', 'Address', 'Strasse', 'Straße', 'Adresszusatz'],
-  zipCode: ['customerzip', 'Zip', 'zip_code', 'zip', 'Postal Code', 'PostalCode', 'PLZ'],
-  city: ['customercity', 'City', 'city', 'Ort'],
-  country: ['customercountry', 'CustomerCountry', 'country', 'accountcountry', 'Country', 'Land'],
-  email: ['customeremail', 'Email', 'customer_email', 'email'],
-  iban: ['iban', 'Iban', 'IBAN'],
+  firstName: ['customerfirstname', 'Given', 'first_name', 'firstName', 'First Name', 'given', 'Vorname'],
+  lastName: ['customerlastname', 'Family', 'last_name', 'lastName', 'Last Name', 'family', 'Name', 'Surname'],
+  address1: ['customerstreet', 'Street', 'address1', 'street', 'Address', 'Strasse', 'Straße', 'Adresszusatz', 'Street Address'],
+  zipCode: ['customerzip', 'Zip', 'zip_code', 'zip', 'Postal Code', 'PostalCode', 'Postcode', 'PLZ', 'ZIP', 'ZIP Code'],
+  city: ['customercity', 'City', 'city', 'Ort', 'Town', 'Locality'],
+  country: ['customercountry', 'CustomerCountry', 'country', 'accountcountry', 'Country', 'Province', 'State', 'Region', 'Land'],
+  email: ['customeremail', 'Email', 'customer_email', 'email', 'E-mail'],
+  iban: ['iban', 'Iban', 'IBAN', 'Account', 'Bank Account'],
   remoteIp: ['merchantip', 'customerip', 'IP', 'remote_ip', 'ip'],
-  shopperId: ['customerid', 'mandatereference', 'ShopperId', 'shopperid', 'Kundennummer'],
+  shopperId: ['customerid', 'mandatereference', 'ShopperId', 'shopperid', 'Kundennummer', 'ID Number'],
   dueDate: ['mandatesigneddate', 'DueDate', 'duedate', 'Spielbeginn'],
   productDescriptor: ['product_descriptor', 'vzweck1', 'Produkt', 'ProductDescriptor', 'descriptor'],
 }
@@ -289,6 +289,19 @@ function splitFullName(fullNameRaw: string): { firstName: string; lastName: stri
     firstName,
     lastName: rest.join(' '),
   }
+}
+
+/**
+ * Extract country code from IBAN (first 2 characters)
+ */
+function getCountryFromIBAN(iban: string): string {
+  if (!iban || iban.length < 2) return ''
+  const code = iban.substring(0, 2).toUpperCase()
+  // Validate it's letters only
+  if (/^[A-Z]{2}$/.test(code)) {
+    return code
+  }
+  return ''
 }
 
 export function mapRecordToSddSale(
@@ -383,6 +396,12 @@ export function mapRecordToSddSale(
 
   const transactionId = `txn_${Date.now()}_${rowIndex}_${Math.random().toString(36).substring(7)}`
 
+  // Get country - fallback to IBAN prefix if not found
+  let country = getField(mapping.country)
+  if (!country) {
+    country = getCountryFromIBAN(iban)
+  }
+
   const sddRequest = {
     transactionId,
     usage,
@@ -394,7 +413,7 @@ export function mapRecordToSddSale(
     address1: getField(mapping.address1) || 'Unknown Street',
     zipCode: getField(mapping.zipCode) || '00000',
     city: getField(mapping.city) || 'Unknown City',
-    country: getField(mapping.country) || 'DE',
+    country: country || 'DE',
     iban,
     dynamicDescriptorParams: config?.dynamicDescriptor,
     customReturnUrls: config?.returnUrls,
@@ -408,6 +427,9 @@ export function mapRecordToSddSale(
     lastName: sddRequest.lastName,
     iban: sddRequest.iban.slice(0, 4) + '****' + sddRequest.iban.slice(-4),
     address1: sddRequest.address1,
+    zipCode: sddRequest.zipCode,
+    city: sddRequest.city,
+    country: sddRequest.country,
     amount: sddRequest.amountMinor,
     currency: sddRequest.currency,
   })
@@ -461,5 +483,3 @@ export function buildRetryTransactionId(baseTransactionId: string, retryCount: n
     : base
   return `${trimmedBase}${suffix}`
 }
-
-
