@@ -37,6 +37,7 @@ function isDuplicateTransactionError(res?: SddSaleResponse | null, err?: any): b
  * - High concurrency (20 parallel requests)
  * - Progress tracking via periodic DB updates
  * - 800s timeout limit
+ * - Skips blacklisted records
  * Only Super Owner can submit to gateway
  */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -96,14 +97,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       ? doc.rows
       : records.map(() => ({ status: 'pending', attempts: 0 }))
 
-    // Get all rows that need processing (skip already approved)
+    // Get all rows that need processing (skip approved and blacklisted)
     const rowsToProcess = records
       .map((_, i) => i)
-      .filter(i => rows[i]?.status !== 'approved')
+      .filter(i => rows[i]?.status !== 'approved' && rows[i]?.status !== 'blacklisted')
 
     if (rowsToProcess.length === 0) {
       const approvedCount = rows.filter((r: any) => r.status === 'approved').length
       const errorCount = rows.filter((r: any) => r.status === 'error').length
+      const blacklistedCount = rows.filter((r: any) => r.status === 'blacklisted').length
 
       return NextResponse.json({
         ok: true,
@@ -112,6 +114,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         total: records.length,
         approved: approvedCount,
         errors: errorCount,
+        blacklisted: blacklistedCount,
         pending: 0,
       })
     }
@@ -283,18 +286,20 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const approvedCount = rows.filter((r: any) => r.status === 'approved').length
     const errorCount = rows.filter((r: any) => r.status === 'error').length
     const pendingCount = rows.filter((r: any) => r.status === 'pending').length
+    const blacklistedCount = rows.filter((r: any) => r.status === 'blacklisted').length
 
     await uploads.updateOne({ _id: doc._id }, {
       $set: {
         rows,
         approvedCount,
         errorCount,
+        blacklistedCount,
         updatedAt: new Date(),
       }
     })
 
     const runtime = Date.now() - startTime
-    console.log(`[Bulk] Complete: ${processed} processed, ${approvedCount} approved, ${errorCount} errors, ${runtime}ms`)
+    console.log(`[Bulk] Complete: ${processed} processed, ${approvedCount} approved, ${errorCount} errors, ${blacklistedCount} blacklisted, ${runtime}ms`)
 
     return NextResponse.json({
       ok: true,
@@ -302,6 +307,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       total: records.length,
       approved: approvedCount,
       errors: errorCount,
+      blacklisted: blacklistedCount,
       pending: pendingCount,
       errorDetails: errors.slice(0, 20), // Return first 20 errors for debugging
       runtime,
@@ -311,4 +317,3 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({ error: err?.message || 'Server error' }, { status: 500 })
   }
 }
-

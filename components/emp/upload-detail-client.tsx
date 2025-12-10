@@ -49,6 +49,7 @@ interface UploadDetailClientProps {
   createdAt: string
   approvedCount: number
   errorCount: number
+  blacklistedCount?: number
   headers: string[]
   records: Record<string, string>[]
   rows: any[]
@@ -64,6 +65,7 @@ export function UploadDetailClient({
   createdAt,
   approvedCount,
   errorCount,
+  blacklistedCount = 0,
   headers,
   records,
   rows,
@@ -85,6 +87,8 @@ export function UploadDetailClient({
 
   const rowData = useMemo(() => {
     const statuses = rows.map((r: any, index: number) => {
+      // Blacklisted takes priority
+      if (r?.status === 'blacklisted') return 'blacklisted'
       const hasValidationError = validation.invalidRows.some(inv => inv.index === index)
       if (hasValidationError && r?.status !== 'approved') return 'validation_error'
       return r?.status || 'pending'
@@ -98,6 +102,12 @@ export function UploadDetailClient({
     
     return { statuses, errors }
   }, [rows, validation])
+
+  // Calculate blacklisted count from rows if not provided
+  const actualBlacklistedCount = blacklistedCount || rows.filter((r: any) => r?.status === 'blacklisted').length
+
+  // Check if there are blocking issues (blacklisted or invalid)
+  const hasBlockingIssues = actualBlacklistedCount > 0 || validation.invalidRows.length > 0
 
   const resetAction = useAsyncAction(
     async () => {
@@ -287,6 +297,12 @@ export function UploadDetailClient({
                   <XCircle className="h-4 w-4 text-red-600 dark:text-red-500" />
                   <span className="font-medium text-red-600 dark:text-red-500">{errorCount}</span>
                 </div>
+                {actualBlacklistedCount > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <Ban className="h-4 w-4 text-purple-600 dark:text-purple-500" />
+                    <span className="font-medium text-purple-600 dark:text-purple-500">{actualBlacklistedCount} blacklisted</span>
+                  </div>
+                )}
                 {validation.invalidRows.length > 0 && (
                   <div className="flex items-center gap-1.5">
                     <AlertTriangle className="h-4 w-4 text-orange-500" />
@@ -307,6 +323,7 @@ export function UploadDetailClient({
                   uploadId={id}
                   totalRecords={recordCount}
                   rows={records}
+                  rowStatuses={rowData.statuses}
                   onComplete={handleRefresh}
                 />
               )}
@@ -411,7 +428,11 @@ export function UploadDetailClient({
                     <DropdownMenuItem
                       onSelect={async (e) => {
                         e.preventDefault()
-                        if (!confirm(`This will submit all ${recordCount} pending records to the gateway. Continue?`)) return
+                        if (hasBlockingIssues) {
+                          toast.error('Cannot sync: remove blacklisted/invalid records first')
+                          return
+                        }
+                        if (!confirm(`This will submit all pending records to the gateway. Continue?`)) return
                         const res = await fetch(`/api/emp/submit-batch/${id}`, { method: 'POST' })
                         const data = await res.json()
                         if (!res.ok) {
@@ -421,6 +442,7 @@ export function UploadDetailClient({
                           handleRefresh()
                         }
                       }}
+                      disabled={hasBlockingIssues}
                       className="cursor-pointer"
                     >
                       <Send className="h-4 w-4 mr-2" />
@@ -643,6 +665,10 @@ export function UploadDetailClient({
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-orange-400 dark:bg-orange-500 rounded-sm shadow-sm"></div>
                   <span className="text-muted-foreground">Invalid</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-purple-500 dark:bg-purple-600 rounded-sm shadow-sm"></div>
+                  <span className="text-muted-foreground">Blacklisted</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 bg-gray-400 dark:bg-gray-600 rounded-sm shadow-sm"></div>

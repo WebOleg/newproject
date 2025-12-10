@@ -6,6 +6,8 @@ import { parseEmpCsv } from '@/lib/emp'
 import { getMongoClient, getDbName } from '@/lib/db'
 import { ObjectId } from 'mongodb'
 import { requireSession } from '@/lib/auth'
+import { getBlacklistedIbans } from '@/lib/blacklist'
+import { getFieldValue } from '@/lib/field-aliases'
 
 export const runtime = 'nodejs'
 
@@ -128,13 +130,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No valid columns found in CSV' }, { status: 400 })
     }
 
+    // 8. Check blacklist
+    const ibans = records
+      .map(r => getFieldValue(r, 'iban'))
+      .filter((iban): iban is string => !!iban)
+      .map(iban => iban.replace(/\s/g, '').toUpperCase())
+    
+    let blacklistedIbans: Set<string> = new Set()
+    try {
+      blacklistedIbans = await getBlacklistedIbans(ibans)
+      if (blacklistedIbans.size > 0) {
+        console.log(`[Upload] Found ${blacklistedIbans.size} blacklisted IBAN(s)`)
+      }
+    } catch (blError: any) {
+      console.error('[Upload] Blacklist check error:', blError)
+      // Continue without blacklist check if it fails
+    }
+
     const totalRecords = records.length
     console.log(`[Upload] Parsed ${totalRecords} records with ${headers.length} columns`)
 
     const chunkSize = MAX_RECORDS_PER_UPLOAD
     const totalParts = Math.ceil(totalRecords / chunkSize)
 
-    // 8. Store in MongoDB with retry logic (split into multiple uploads if needed)
+    // 9. Store in MongoDB with retry logic (split into multiple uploads if needed)
     const client = await getMongoClient()
     const db = client.db(getDbName())
     const uploads = db.collection('uploads')
@@ -148,6 +167,22 @@ export async function POST(req: Request) {
       const recordCount = chunkRecords.length
       const partNumber = idx + 1
 
+      // Create rows with blacklist status
+      const rows = chunkRecords.map((record, rowIdx) => {
+        const iban = getFieldValue(record, 'iban')
+        const normalizedIban = iban ? iban.replace(/\s/g, '').toUpperCase() : ''
+        const isBlacklisted = blacklistedIbans.has(normalizedIban)
+        
+        return {
+          status: isBlacklisted ? 'blacklisted' : 'pending',
+          attempts: 0,
+          originalRowNumber: start + rowIdx + 1,
+          ...(isBlacklisted && { blacklistedAt: now, blacklistReason: 'IBAN in blacklist' })
+        }
+      })
+
+      const blacklistedCount = rows.filter(r => r.status === 'blacklisted').length
+
       return {
         filename: totalParts > 1 ? `${file.name} (Part ${partNumber}/${totalParts})` : file.name,
         originalFilename: file.name,
@@ -160,13 +195,10 @@ export async function POST(req: Request) {
         recordCount,
         headers,
         records: chunkRecords,
-        rows: chunkRecords.map((_, rowIdx) => ({
-          status: 'pending',
-          attempts: 0,
-          originalRowNumber: start + rowIdx + 1,
-        })),
+        rows,
         approvedCount: 0,
         errorCount: 0,
+        blacklistedCount,
         partNumber,
         partTotal: totalParts,
         recordStartIndex: start,
@@ -204,16 +236,19 @@ export async function POST(req: Request) {
       .sort(([a], [b]) => Number(a) - Number(b))
       .map(([, value]) => value.toString())
 
-    console.log(`[Upload] Saved ${docs.length} document(s) for file ${file.name}`)
+    const totalBlacklisted = docs.reduce((sum, d) => sum + (d.blacklistedCount || 0), 0)
+    console.log(`[Upload] Saved ${docs.length} document(s) for file ${file.name}${totalBlacklisted > 0 ? ` (${totalBlacklisted} blacklisted)` : ''}`)
 
     return NextResponse.json({
       ok: true,
       totalRecords,
       parts: docs.length,
+      blacklistedCount: totalBlacklisted,
       uploads: docs.map((chunk, idx) => ({
         id: insertedIds[idx],
         filename: chunk.filename,
         recordCount: chunk.recordCount,
+        blacklistedCount: chunk.blacklistedCount,
         partNumber: chunk.partNumber,
         partTotal: chunk.partTotal,
         recordRange: [chunk.recordStartIndex + 1, chunk.recordEndIndex + 1],
@@ -239,5 +274,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }
-
-

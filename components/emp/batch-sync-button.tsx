@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
@@ -10,10 +10,11 @@ interface BatchSyncButtonProps {
   uploadId: string
   totalRecords: number
   rows?: any[]
+  rowStatuses?: string[]
   onComplete?: () => void
 }
 
-export function BatchSyncButton({ uploadId, totalRecords, rows = [], onComplete }: BatchSyncButtonProps) {
+export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses = [], onComplete }: BatchSyncButtonProps) {
   const [syncing, setSyncing] = useState(false)
   const beforeUnloadRef = useRef<(() => void) | null>(null)
 
@@ -38,6 +39,17 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], onComplete 
   }
 
   const submitBulk = async () => {
+    // Check for blacklisted records
+    const blacklistedIndexes = rowStatuses
+      .map((s, i) => s === 'blacklisted' ? i + 1 : null)
+      .filter(Boolean)
+    
+    if (blacklistedIndexes.length > 0) {
+      toast.error(`Cannot sync: ${blacklistedIndexes.length} blacklisted record(s). Remove row(s) ${blacklistedIndexes.slice(0, 3).join(', ')}${blacklistedIndexes.length > 3 ? '...' : ''} first.`, { duration: 5000 })
+      return
+    }
+
+    // Check for validation errors
     if (rows.length > 0) {
       const validation = validateRows(rows)
       if (!validation.valid) {
