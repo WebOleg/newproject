@@ -178,32 +178,38 @@ export function TableClient({ title, subtitle, headers, records, rowStatuses, ro
                     ))}
                     <td className={`py-1 px-2 text-right border-b sticky right-0 z-10 border-l ${stickyClass}`}>
                       <div className="flex items-center justify-end gap-1">
-                        {uploadId && !isBlacklisted && (
+                        {uploadId && (
                           <>
-                            {canEdit && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                title="Edit"
-                                onClick={() => setEditingRow({ index: originalIndex, record: row })}
-                              >
-                                <span className="sr-only">Edit</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
-                              </Button>
+                            {/* Edit and Sync - not for blacklisted */}
+                            {!isBlacklisted && (
+                              <>
+                                {canEdit && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    title="Edit"
+                                    onClick={() => setEditingRow({ index: originalIndex, record: row })}
+                                  >
+                                    <span className="sr-only">Edit</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
+                                  </Button>
+                                )}
+                                {canSyncRow && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    title="Sync"
+                                    onClick={handleResubmit}
+                                  >
+                                    <span className="sr-only">Sync</span>
+                                    <RefreshCw className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              </>
                             )}
-                            {canSyncRow && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                title="Sync"
-                                onClick={handleResubmit}
-                              >
-                                <span className="sr-only">Sync</span>
-                                <RefreshCw className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
+                            {/* Delete - always available if canEdit */}
                             {canEdit && (
                               <Button
                                 variant="ghost"
@@ -217,11 +223,6 @@ export function TableClient({ title, subtitle, headers, records, rowStatuses, ro
                               </Button>
                             )}
                           </>
-                        )}
-                        {isBlacklisted && (
-                          <span className="text-purple-600 dark:text-purple-400" title="Blacklisted">
-                            <Ban className="h-4 w-4" />
-                          </span>
                         )}
                       </div>
                     </td>
