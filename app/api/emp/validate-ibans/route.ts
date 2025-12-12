@@ -8,7 +8,7 @@ const DAYS_THRESHOLD = 7
  * POST /api/emp/validate-ibans
  * 
  * Checks if IBANs exist in emp_reconcile_transactions
- * and are older than 7 days
+ * and are YOUNGER than 7 days (recently processed)
  * 
  * Body: { ibans: string[] }
  * Returns: { duplicates: { iban: string, daysAgo: number }[] }
@@ -37,20 +37,20 @@ export async function POST(request: NextRequest) {
     const thresholdDate = new Date()
     thresholdDate.setDate(thresholdDate.getDate() - DAYS_THRESHOLD)
 
-    // Find transactions with matching IBANs older than 7 days
+    // Find transactions with matching IBANs YOUNGER than 7 days (recently processed)
     const existingTransactions = await reconcileCollection.find({
       $or: [
         { bankAccountNumber: { $in: normalizedIbans } },
         { bank_account_number: { $in: normalizedIbans } }
       ],
-      transactionDateObj: { $lt: thresholdDate }
+      transactionDateObj: { $gte: thresholdDate }  // Within last 7 days
     }).project({
       bankAccountNumber: 1,
       bank_account_number: 1,
       transactionDateObj: 1
     }).toArray()
 
-    // Build map of IBAN -> oldest transaction date
+    // Build map of IBAN -> most recent transaction date
     const ibanDateMap = new Map<string, Date>()
     
     for (const tx of existingTransactions) {
@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
       const txDate = tx.transactionDateObj
       const existing = ibanDateMap.get(iban)
       
-      // Keep the oldest date
-      if (!existing || (txDate && txDate < existing)) {
+      // Keep the most recent date
+      if (!existing || (txDate && txDate > existing)) {
         ibanDateMap.set(iban, txDate)
       }
     }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       return { iban, daysAgo }
     })
 
-    console.log(`[Validate IBANs] Checked ${normalizedIbans.length} IBANs, found ${duplicates.length} duplicates older than ${DAYS_THRESHOLD} days`)
+    console.log(`[Validate IBANs] Checked ${normalizedIbans.length} IBANs, found ${duplicates.length} processed within last ${DAYS_THRESHOLD} days`)
 
     return NextResponse.json({ duplicates })
   } catch (error: any) {
