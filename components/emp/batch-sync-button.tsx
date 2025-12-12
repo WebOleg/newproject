@@ -1,10 +1,10 @@
 "use client"
-
-import { useRef, useState, useMemo } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import { validateRows } from '@/lib/validation'
+import { validateRows, normalizeIban } from '@/lib/validation'
+import { getFieldValue } from '@/lib/field-aliases'
 
 interface BatchSyncButtonProps {
   uploadId: string
@@ -49,13 +49,47 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses
       return
     }
 
-    // Check for validation errors
+    // Check for validation errors (includes duplicate IBAN check within file)
     if (rows.length > 0) {
       const validation = validateRows(rows)
       if (!validation.valid) {
         const firstError = validation.invalidRows[0]
         toast.error(`Row ${firstError.index + 1}: ${firstError.errors[0]}`, { duration: 5000 })
         return
+      }
+    }
+
+    // Check for IBANs already processed (older than 7 days)
+    if (rows.length > 0) {
+      try {
+        const ibans = rows
+          .map(row => normalizeIban(getFieldValue(row, 'iban')))
+          .filter(Boolean)
+
+        if (ibans.length > 0) {
+          const response = await fetch('/api/emp/validate-ibans', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ibans })
+          })
+
+          if (response.ok) {
+            const { duplicates } = await response.json()
+            
+            if (duplicates && duplicates.length > 0) {
+              const firstDup = duplicates[0]
+              const maskedIban = firstDup.iban.slice(0, 4) + '****' + firstDup.iban.slice(-4)
+              toast.error(
+                `Cannot sync: ${duplicates.length} IBAN(s) already processed. ${maskedIban} was processed ${firstDup.daysAgo} days ago.`,
+                { duration: 7000 }
+              )
+              return
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[BatchSync] IBAN validation check failed:', err)
+        // Continue with sync if check fails - don't block
       }
     }
 
@@ -69,7 +103,6 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       })
-
       const data = await res.json()
       
       if (!res.ok) {
