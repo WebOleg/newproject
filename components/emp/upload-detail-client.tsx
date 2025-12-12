@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { TableClient } from '@/components/emp/table-client'
 import { Button } from '@/components/ui/button'
@@ -40,7 +40,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AlertTriangle } from 'lucide-react'
 import { useSession } from '@/contexts/session-context'
-import { validateRows } from '@/lib/validation'
+import { validateRows, normalizeIban } from '@/lib/validation'
+import { getFieldValue } from '@/lib/field-aliases'
 
 interface UploadDetailClientProps {
   id: string
@@ -79,9 +80,50 @@ export function UploadDetailClient({
   const [filterChargebacksOpen, setFilterChargebacksOpen] = useState(false)
   const [showFilteredRowsOpen, setShowFilteredRowsOpen] = useState(false)
 
+  // DB validation state - IBANs processed within 7 days
+  const [recentlyProcessedIbans, setRecentlyProcessedIbans] = useState<Map<string, number>>(new Map())
+  const [dbValidationLoading, setDbValidationLoading] = useState(true)
+
   const handleRefresh = () => {
     router.refresh()
   }
+
+  // Fetch DB validation on mount
+  useEffect(() => {
+    const validateIbansInDb = async () => {
+      try {
+        const ibans = records
+          .map(row => normalizeIban(getFieldValue(row, 'iban')))
+          .filter(Boolean)
+
+        if (ibans.length === 0) {
+          setDbValidationLoading(false)
+          return
+        }
+
+        const response = await fetch('/api/emp/validate-ibans', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ibans })
+        })
+
+        if (response.ok) {
+          const { duplicates } = await response.json()
+          const map = new Map<string, number>()
+          duplicates?.forEach((d: { iban: string; daysAgo: number }) => {
+            map.set(d.iban, d.daysAgo)
+          })
+          setRecentlyProcessedIbans(map)
+        }
+      } catch (err) {
+        console.error('[UploadDetail] DB validation failed:', err)
+      } finally {
+        setDbValidationLoading(false)
+      }
+    }
+
+    validateIbansInDb()
+  }, [records])
 
   const validation = useMemo(() => validateRows(records), [records])
 
@@ -89,25 +131,40 @@ export function UploadDetailClient({
     const statuses = rows.map((r: any, index: number) => {
       // Blacklisted takes priority
       if (r?.status === 'blacklisted') return 'blacklisted'
+      
+      // Check if IBAN was recently processed (within 7 days)
+      const iban = normalizeIban(getFieldValue(records[index], 'iban'))
+      if (iban && recentlyProcessedIbans.has(iban)) return 'validation_error'
+      
       const hasValidationError = validation.invalidRows.some(inv => inv.index === index)
       if (hasValidationError && r?.status !== 'approved') return 'validation_error'
       return r?.status || 'pending'
     })
     
     const errors = rows.map((r: any, index: number) => {
+      // Check if IBAN was recently processed
+      const iban = normalizeIban(getFieldValue(records[index], 'iban'))
+      if (iban && recentlyProcessedIbans.has(iban)) {
+        const daysAgo = recentlyProcessedIbans.get(iban)
+        return `IBAN processed ${daysAgo} day(s) ago (must wait 7 days)`
+      }
+      
       const validationError = validation.invalidRows.find(inv => inv.index === index)
       if (validationError) return validationError.errors.join(', ')
       return r?.empError || r?.emp?.technicalMessage || r?.emp?.message
     })
     
     return { statuses, errors }
-  }, [rows, validation])
+  }, [rows, validation, records, recentlyProcessedIbans])
 
   // Calculate blacklisted count from rows if not provided
   const actualBlacklistedCount = blacklistedCount || rows.filter((r: any) => r?.status === 'blacklisted').length
 
+  // Count recently processed IBANs
+  const recentlyProcessedCount = recentlyProcessedIbans.size
+
   // Check if there are blocking issues (blacklisted or invalid)
-  const hasBlockingIssues = actualBlacklistedCount > 0 || validation.invalidRows.length > 0
+  const hasBlockingIssues = actualBlacklistedCount > 0 || validation.invalidRows.length > 0 || recentlyProcessedCount > 0
 
   const resetAction = useAsyncAction(
     async () => {
@@ -303,10 +360,12 @@ export function UploadDetailClient({
                     <span className="font-medium text-purple-600 dark:text-purple-500">{actualBlacklistedCount} blacklisted</span>
                   </div>
                 )}
-                {validation.invalidRows.length > 0 && (
+                {(validation.invalidRows.length > 0 || recentlyProcessedCount > 0) && (
                   <div className="flex items-center gap-1.5">
                     <AlertTriangle className="h-4 w-4 text-orange-500" />
-                    <span className="font-medium text-orange-500">{validation.invalidRows.length} invalid</span>
+                    <span className="font-medium text-orange-500">
+                      {validation.invalidRows.length + recentlyProcessedCount} invalid
+                    </span>
                   </div>
                 )}
                 <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -651,7 +710,12 @@ export function UploadDetailClient({
       <Card className="border-border/40 shadow-sm">
         <CardContent className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
-            <h3 className="text-base sm:text-lg font-semibold">Transaction Records</h3>
+            <h3 className="text-base sm:text-lg font-semibold">
+              Transaction Records
+              {dbValidationLoading && (
+                <span className="ml-2 text-xs text-muted-foreground">(validating...)</span>
+              )}
+            </h3>
             {!isMobile && (
               <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
                 <div className="flex items-center gap-2">
