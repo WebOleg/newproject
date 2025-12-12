@@ -37,6 +37,14 @@ function isInvalidZip(zip: string | undefined): boolean {
 }
 
 /**
+ * Normalize IBAN for comparison (uppercase, no spaces)
+ */
+export function normalizeIban(iban: string | undefined): string {
+  if (!iban) return ''
+  return iban.toUpperCase().replace(/\s+/g, '')
+}
+
+/**
  * Check for common encoding issues (mojibake)
  * Detects broken UTF-8 in any text field
  */
@@ -165,6 +173,25 @@ export function validateRow(row: Record<string, any>): { valid: boolean; errors:
   return { valid: errors.length === 0, errors }
 }
 
+/**
+ * Find duplicate IBANs within the same file
+ * Returns map of normalized IBAN -> array of row indexes where it appears
+ */
+function findDuplicateIbans(rows: Record<string, any>[]): Map<string, number[]> {
+  const ibanOccurrences = new Map<string, number[]>()
+  
+  rows.forEach((row, index) => {
+    const iban = normalizeIban(getFieldValue(row, 'iban'))
+    if (iban) {
+      const existing = ibanOccurrences.get(iban) || []
+      existing.push(index)
+      ibanOccurrences.set(iban, existing)
+    }
+  })
+  
+  return ibanOccurrences
+}
+
 export function validateRows(rows: Record<string, any>[]): { 
   valid: boolean
   invalidRows: { index: number; errors: string[] }[]
@@ -172,10 +199,38 @@ export function validateRows(rows: Record<string, any>[]): {
 } {
   const invalidRows: { index: number; errors: string[] }[] = []
   
+  // Step 1: Find duplicate IBANs
+  const ibanOccurrences = findDuplicateIbans(rows)
+  const duplicateIbanErrors = new Map<number, string>()
+  
+  ibanOccurrences.forEach((indexes, iban) => {
+    if (indexes.length > 1) {
+      // First occurrence is valid, mark others as duplicates
+      const firstRowNum = indexes[0] + 1 // 1-based for display
+      indexes.slice(1).forEach(idx => {
+        duplicateIbanErrors.set(idx, `Duplicate IBAN in file (first seen at row ${firstRowNum})`)
+      })
+    }
+  })
+  
+  // Step 2: Validate each row
   rows.forEach((row, index) => {
+    const rowErrors: string[] = []
+    
+    // Check for duplicate IBAN first
+    const duplicateError = duplicateIbanErrors.get(index)
+    if (duplicateError) {
+      rowErrors.push(duplicateError)
+    }
+    
+    // Run standard validation
     const result = validateRow(row)
     if (!result.valid) {
-      invalidRows.push({ index, errors: result.errors })
+      rowErrors.push(...result.errors)
+    }
+    
+    if (rowErrors.length > 0) {
+      invalidRows.push({ index, errors: rowErrors })
     }
   })
   
