@@ -53,8 +53,8 @@ function hasEncodingIssue(value: string | undefined): boolean {
   
   // Check for common mojibake patterns (broken UTF-8)
   const mojibakePatterns = [
-    /Ã[^\s]/,          // Ã followed by anything
-    /Â[^\s]/,          // Â followed by anything  
+    /Ã/,               // Ã anywhere (e.g., García -> GarcÃ)
+    /Â/,               // Â anywhere
     /ï¿½/,             // Common replacement (�)
     /â€/,              // Quote marks broken
     /Ëœ/,              // Tilde broken
