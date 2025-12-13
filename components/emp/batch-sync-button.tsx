@@ -71,7 +71,7 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses
           const response = await fetch('/api/emp/validate-ibans', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ibans })
+            body: JSON.stringify({ ibans, currentUploadId: uploadId })
           })
 
           if (response.ok) {
