@@ -6,7 +6,7 @@ import { TableClient } from '@/components/emp/table-client'
 import { Button } from '@/components/ui/button'
 import { BatchSyncButton } from '@/components/emp/batch-sync-button'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, FileText, Calendar, Hash, CheckCircle2, XCircle, CheckCircle, RotateCcw, Ban, Loader2, MoreVertical, Filter, Send } from 'lucide-react'
+import { ArrowLeft, FileText, Calendar, Hash, CheckCircle2, XCircle, CheckCircle, RotateCcw, Ban, Loader2, MoreVertical, Filter, Send, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useAsyncAction } from '@/hooks/use-async-action'
 import { toast } from 'sonner'
@@ -295,6 +295,7 @@ export function UploadDetailClient({
   }
 
   const [isFilteringChargebacks, setIsFilteringChargebacks] = useState(false)
+  const [isDeletingInvalid, setIsDeletingInvalid] = useState(false)
 
   const handleFilterChargebacks = async () => {
     setIsFilteringChargebacks(true)
@@ -323,6 +324,33 @@ export function UploadDetailClient({
       toast.error(err?.message || 'Failed to filter chargebacks')
     } finally {
       setIsFilteringChargebacks(false)
+    }
+  }
+
+  const handleDeleteInvalid = async () => {
+    if (!confirm(`This will delete all invalid rows (validation errors, blacklisted, recently processed). Continue?`)) {
+      return
+    }
+    setIsDeletingInvalid(true)
+    try {
+      const res = await fetch(`/api/emp/uploads/delete-invalid/${id}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete invalid rows')
+      }
+      if (data.deletedCount === 0) {
+        toast.success('No invalid rows to delete')
+      } else {
+        toast.success(`Deleted ${data.deletedCount} invalid row(s). ${data.newRecordCount} rows remaining.`)
+      }
+      handleRefresh()
+    } catch (err: any) {
+      console.error('Delete invalid error:', err)
+      toast.error(err?.message || 'Failed to delete invalid rows')
+    } finally {
+      setIsDeletingInvalid(false)
     }
   }
 
@@ -456,6 +484,17 @@ export function UploadDetailClient({
                     >
                       <Filter className="h-4 w-4 mr-2" />
                       {isFilteringChargebacks ? 'Filtering...' : 'Filter Chargebacks'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={(e) => {
+                        e.preventDefault()
+                        handleDeleteInvalid()
+                      }}
+                      disabled={isDeletingInvalid}
+                      className="text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950/20 cursor-pointer"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {isDeletingInvalid ? 'Deleting...' : 'Delete All Invalid'}
                     </DropdownMenuItem>
                     {filteredRecords && filteredRecords.length > 0 && (
                       <>
