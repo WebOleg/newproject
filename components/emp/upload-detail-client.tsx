@@ -329,12 +329,17 @@ export function UploadDetailClient({
   }
 
   const handleDeleteInvalid = async () => {
-    if (!confirm(`This will delete all invalid rows (validation errors, blacklisted, recently processed). Continue?`)) {
+    const message = skipAddressValidation
+      ? `This will delete all invalid rows (excluding address/postal/city errors). Continue?`
+      : `This will delete all invalid rows (validation errors, blacklisted, recently processed). Continue?`
+
+    if (!confirm(message)) {
       return
     }
     setIsDeletingInvalid(true)
     try {
-      const res = await fetch(`/api/emp/uploads/delete-invalid/${id}`, {
+      const url = `/api/emp/uploads/delete-invalid/${id}?skipAddressValidation=${skipAddressValidation}`
+      const res = await fetch(url, {
         method: 'DELETE',
       })
       const data = await res.json()

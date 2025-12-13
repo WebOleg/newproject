@@ -8,14 +8,20 @@ export const runtime = 'nodejs'
 
 /**
  * DELETE /api/emp/uploads/delete-invalid/[id]
- * 
+ *
  * Deletes all invalid rows from an upload (validation errors, blacklisted, recently processed)
  * Only Super Owner or Owner (if draft) can delete rows
+ *
+ * Query params: skipAddressValidation (optional boolean)
  */
-export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
+export async function DELETE(req: Request, ctx: { params: { id: string } }) {
   try {
     const session = await requireSession()
     const uploadId = ctx.params.id
+
+    // Get skipAddressValidation from query params
+    const url = new URL(req.url)
+    const skipAddressValidation = url.searchParams.get('skipAddressValidation') === 'true'
 
     const client = await getMongoClient()
     const db = client.db(getDbName())
@@ -37,8 +43,8 @@ export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
       return NextResponse.json({ error: 'No records in upload' }, { status: 400 })
     }
 
-    // Get validation errors
-    const validation = validateRows(records)
+    // Get validation errors (respecting skipAddressValidation setting)
+    const validation = validateRows(records, { skipAddressValidation })
     const invalidIndexes = new Set(validation.invalidRows.map(r => r.index))
 
     // Also include blacklisted rows
