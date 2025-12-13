@@ -6,7 +6,7 @@ import { TableClient } from '@/components/emp/table-client'
 import { Button } from '@/components/ui/button'
 import { BatchSyncButton } from '@/components/emp/batch-sync-button'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, FileText, Calendar, Hash, CheckCircle2, XCircle, CheckCircle, RotateCcw, Ban, Loader2, MoreVertical, Filter, Send, Trash2 } from 'lucide-react'
+import { ArrowLeft, FileText, Calendar, Hash, CheckCircle2, XCircle, CheckCircle, RotateCcw, Ban, Loader2, MoreVertical, Filter, Send, Trash2, MapPin } from 'lucide-react'
 import Link from 'next/link'
 import { useAsyncAction } from '@/hooks/use-async-action'
 import { toast } from 'sonner'
@@ -79,6 +79,7 @@ export function UploadDetailClient({
   const [manualVoidOpen, setManualVoidOpen] = useState(false)
   const [filterChargebacksOpen, setFilterChargebacksOpen] = useState(false)
   const [showFilteredRowsOpen, setShowFilteredRowsOpen] = useState(false)
+  const [skipAddressValidation, setSkipAddressValidation] = useState(false)
 
   // DB validation state - IBANs processed within 7 days
   const [recentlyProcessedIbans, setRecentlyProcessedIbans] = useState<Map<string, number>>(new Map())
@@ -125,7 +126,7 @@ export function UploadDetailClient({
     validateIbansInDb()
   }, [records])
 
-  const validation = useMemo(() => validateRows(records), [records])
+  const validation = useMemo(() => validateRows(records, { skipAddressValidation }), [records, skipAddressValidation])
 
   const rowData = useMemo(() => {
     const statuses = rows.map((r: any, index: number) => {
@@ -396,6 +397,20 @@ export function UploadDetailClient({
                     </span>
                   </div>
                 )}
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant={skipAddressValidation ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSkipAddressValidation(!skipAddressValidation)}
+                    className="gap-2"
+                    title={skipAddressValidation ? "Address validation is OFF" : "Address validation is ON"}
+                  >
+                    <MapPin className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      {skipAddressValidation ? "Address Check: OFF" : "Address Check: ON"}
+                    </span>
+                  </Button>
+                </div>
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
                   <span className="hidden sm:inline text-sm">{new Date(createdAt).toLocaleString()}</span>
@@ -412,6 +427,7 @@ export function UploadDetailClient({
                   rows={records}
                   rowStatuses={rowData.statuses}
                   onComplete={handleRefresh}
+                  skipAddressValidation={skipAddressValidation}
                 />
               )}
 

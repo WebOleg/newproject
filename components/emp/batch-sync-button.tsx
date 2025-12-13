@@ -12,9 +12,10 @@ interface BatchSyncButtonProps {
   rows?: any[]
   rowStatuses?: string[]
   onComplete?: () => void
+  skipAddressValidation?: boolean
 }
 
-export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses = [], onComplete }: BatchSyncButtonProps) {
+export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses = [], onComplete, skipAddressValidation = false }: BatchSyncButtonProps) {
   const [syncing, setSyncing] = useState(false)
   const beforeUnloadRef = useRef<(() => void) | null>(null)
 
@@ -51,7 +52,7 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses
 
     // Check for validation errors (includes duplicate IBAN check within file)
     if (rows.length > 0) {
-      const validation = validateRows(rows)
+      const validation = validateRows(rows, { skipAddressValidation })
       if (!validation.valid) {
         const firstError = validation.invalidRows[0]
         toast.error(`Row ${firstError.index + 1}: ${firstError.errors[0]}`, { duration: 5000 })

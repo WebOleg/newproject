@@ -4,8 +4,8 @@
  */
 import { getFieldValue, getFullAddress, getFullName, getCountry } from './field-aliases'
 
-// Invalid characters in names (numbers, special symbols)
-const INVALID_NAME_PATTERN = /[0-9*#@$%^&+=\[\]{}|\\<>]/
+// Invalid characters in names (numbers, special symbols, accented characters)
+const INVALID_NAME_PATTERN = /[0-9*#@$%^&+=\[\]{}|\\<>àâäçèéêëîïôöùûüÿñÀÂÄÇÈÉÊËÎÏÔÖÙÛÜŸÑ]/
 
 // Placeholder values that indicate missing/invalid data
 const PLACEHOLDER_VALUES = [
@@ -107,69 +107,76 @@ export function validateName(name: string | undefined): { valid: boolean; error?
   return { valid: true }
 }
 
-export function validateRequiredFields(row: Record<string, any>): { valid: boolean; errors: string[] } {
+export function validateRequiredFields(row: Record<string, any>, options?: { skipAddressValidation?: boolean }): { valid: boolean; errors: string[] } {
   const errors: string[] = []
-  
-  // Address
-  const address = getFullAddress(row)
-  if (!address) {
-    errors.push('Address is required')
-  } else if (isPlaceholder(address)) {
-    errors.push('Address contains placeholder value (unknown)')
-  } else if (hasEncodingIssue(address)) {
-    errors.push('Address contains encoding issues (broken characters)')
+  const skipAddress = options?.skipAddressValidation ?? false
+
+  // Address - skip if disabled
+  if (!skipAddress) {
+    const address = getFullAddress(row)
+    if (!address) {
+      errors.push('Address is required')
+    } else if (isPlaceholder(address)) {
+      errors.push('Address contains placeholder value (unknown)')
+    } else if (hasEncodingIssue(address)) {
+      errors.push('Address contains encoding issues (broken characters)')
+    }
   }
-  
-  // Postal Code
-  const postalCode = getFieldValue(row, 'postalCode')
-  if (!postalCode) {
-    errors.push('Postal Code is required')
-  } else if (isInvalidZip(postalCode)) {
-    errors.push('Postal Code is invalid (00000)')
-  } else if (isPlaceholder(postalCode)) {
-    errors.push('Postal Code contains placeholder value')
+
+  // Postal Code - skip if disabled
+  if (!skipAddress) {
+    const postalCode = getFieldValue(row, 'postalCode')
+    if (!postalCode) {
+      errors.push('Postal Code is required')
+    } else if (isInvalidZip(postalCode)) {
+      errors.push('Postal Code is invalid (00000)')
+    } else if (isPlaceholder(postalCode)) {
+      errors.push('Postal Code contains placeholder value')
+    }
   }
-  
-  // City
-  const city = getFieldValue(row, 'city')
-  if (!city) {
-    errors.push('City is required')
-  } else if (isPlaceholder(city)) {
-    errors.push('City contains placeholder value')
-  } else if (hasEncodingIssue(city)) {
-    errors.push('City contains encoding issues (broken characters)')
+
+  // City - skip if disabled
+  if (!skipAddress) {
+    const city = getFieldValue(row, 'city')
+    if (!city) {
+      errors.push('City is required')
+    } else if (isPlaceholder(city)) {
+      errors.push('City contains placeholder value')
+    } else if (hasEncodingIssue(city)) {
+      errors.push('City contains encoding issues (broken characters)')
+    }
   }
-  
+
   // Country - from column or IBAN fallback
   const country = getCountry(row)
   if (!country) {
     errors.push('Country is required (not found in columns or IBAN)')
   }
-  
+
   return { valid: errors.length === 0, errors }
 }
 
-export function validateRow(row: Record<string, any>): { valid: boolean; errors: string[] } {
+export function validateRow(row: Record<string, any>, options?: { skipAddressValidation?: boolean }): { valid: boolean; errors: string[] } {
   const errors: string[] = []
-  
+
   // Validate amount
   const amount = getFieldValue(row, 'amount')
   const amountResult = validateAmount(amount)
   if (!amountResult.valid && amountResult.error) {
     errors.push(amountResult.error)
   }
-  
+
   // Validate name
   const name = getFullName(row)
   const nameResult = validateName(name)
   if (!nameResult.valid && nameResult.error) {
     errors.push(nameResult.error)
   }
-  
+
   // Validate required fields
-  const fieldsResult = validateRequiredFields(row)
+  const fieldsResult = validateRequiredFields(row, options)
   errors.push(...fieldsResult.errors)
-  
+
   return { valid: errors.length === 0, errors }
 }
 
@@ -192,17 +199,17 @@ function findDuplicateIbans(rows: Record<string, any>[]): Map<string, number[]> 
   return ibanOccurrences
 }
 
-export function validateRows(rows: Record<string, any>[]): { 
+export function validateRows(rows: Record<string, any>[], options?: { skipAddressValidation?: boolean }): {
   valid: boolean
   invalidRows: { index: number; errors: string[] }[]
   summary: string
 } {
   const invalidRows: { index: number; errors: string[] }[] = []
-  
+
   // Step 1: Find duplicate IBANs
   const ibanOccurrences = findDuplicateIbans(rows)
   const duplicateIbanErrors = new Map<number, string>()
-  
+
   ibanOccurrences.forEach((indexes, iban) => {
     if (indexes.length > 1) {
       // First occurrence is valid, mark others as duplicates
@@ -212,32 +219,32 @@ export function validateRows(rows: Record<string, any>[]): {
       })
     }
   })
-  
+
   // Step 2: Validate each row
   rows.forEach((row, index) => {
     const rowErrors: string[] = []
-    
+
     // Check for duplicate IBAN first
     const duplicateError = duplicateIbanErrors.get(index)
     if (duplicateError) {
       rowErrors.push(duplicateError)
     }
-    
+
     // Run standard validation
-    const result = validateRow(row)
+    const result = validateRow(row, options)
     if (!result.valid) {
       rowErrors.push(...result.errors)
     }
-    
+
     if (rowErrors.length > 0) {
       invalidRows.push({ index, errors: rowErrors })
     }
   })
-  
+
   const valid = invalidRows.length === 0
-  const summary = valid 
+  const summary = valid
     ? 'All rows valid'
     : `${invalidRows.length} row(s) have validation errors`
-  
+
   return { valid, invalidRows, summary }
 }
