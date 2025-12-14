@@ -5,7 +5,7 @@
 import { getFieldValue, getFullAddress, getFullName, getCountry } from './field-aliases'
 
 // Invalid characters in names (numbers, special symbols, accented characters)
-const INVALID_NAME_PATTERN = /[0-9*#@$%^&+=\[\]{}|\\<>àâäçèéêëîïôöùûüÿñÀÂÄÇÈÉÊËÎÏÔÖÙÛÜŸÑ]/
+const INVALID_NAME_PATTERN = /[0-9*#@$%^&+=\[\]{}|\\<>áàâäçèéêëíìîïóòôöúùûüÿñÁÀÂÄÇÈÉÊËÍÌÎÏÓÒÔÖÚÙÛÜŸÑ]/
 
 // Placeholder values that indicate missing/invalid data
 const PLACEHOLDER_VALUES = [
