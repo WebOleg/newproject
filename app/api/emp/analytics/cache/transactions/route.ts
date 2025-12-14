@@ -67,7 +67,9 @@ export async function GET(request: NextRequest) {
 // POST: resync (fetch remote via reconcile and cache) for a date range
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Transaction Cache] POST request received')
     await requireWriteAccess()
+    console.log('[Transaction Cache] Write access granted')
 
     const body = await request.json().catch(() => ({}))
     const clearCache = body.clear_cache !== false // Default to true

@@ -198,6 +198,15 @@ export default function AnalyticsPage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({}), // No dates, backend defaults to last 2 years
       })
+
+      // Check content type before parsing as JSON
+      const contentType = res.headers.get('content-type')
+      if (!contentType?.includes('application/json')) {
+        const text = await res.text()
+        console.error('Expected JSON but received:', contentType, text.substring(0, 500))
+        throw new Error(`Server returned ${contentType} instead of JSON. Check console for details.`)
+      }
+
       const j = await res.json()
       if (!res.ok) throw new Error(j?.error || 'Resync failed')
 
@@ -207,6 +216,7 @@ export default function AnalyticsPage() {
         loadTransactions()
       }
     } catch (e: any) {
+      console.error('Transaction resync error:', e)
       toast.error(e?.message || 'Resync failed')
       throw e
     }
@@ -221,6 +231,15 @@ export default function AnalyticsPage() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({}), // No dates, backend defaults to last 2 years
       })
+
+      // Check content type before parsing as JSON
+      const contentType = res.headers.get('content-type')
+      if (!contentType?.includes('application/json')) {
+        const text = await res.text()
+        console.error('Expected JSON but received:', contentType, text.substring(0, 500))
+        throw new Error(`Server returned ${contentType} instead of JSON. Check console for details.`)
+      }
+
       const j = await res.json()
       if (!res.ok) throw new Error(j?.error || 'Resync failed')
 
@@ -230,6 +249,7 @@ export default function AnalyticsPage() {
         loadChargebacks()
       }
     } catch (e: any) {
+      console.error('Chargeback resync error:', e)
       toast.error(e?.message || 'Resync failed')
       throw e
     }
