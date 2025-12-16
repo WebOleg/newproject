@@ -91,19 +91,23 @@ export function validateName(name: string | undefined): { valid: boolean; error?
   if (!name || name.trim() === '') {
     return { valid: false, error: 'Name is required' }
   }
-  
+
+  if (name.length > 35) {
+    return { valid: false, error: 'Name cannot be longer than 35 characters' }
+  }
+
   if (isPlaceholder(name)) {
     return { valid: false, error: 'Name contains placeholder value' }
   }
-  
+
   if (hasEncodingIssue(name)) {
     return { valid: false, error: 'Name contains encoding issues (broken characters)' }
   }
-  
+
   if (INVALID_NAME_PATTERN.test(name)) {
     return { valid: false, error: 'Name contains numbers or symbols' }
   }
-  
+
   return { valid: true }
 }
 
