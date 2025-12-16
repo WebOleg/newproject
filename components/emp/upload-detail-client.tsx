@@ -81,7 +81,7 @@ export function UploadDetailClient({
   const [showFilteredRowsOpen, setShowFilteredRowsOpen] = useState(false)
   const [skipAddressValidation, setSkipAddressValidation] = useState(false)
 
-  // DB validation state - IBANs processed within 7 days
+  // DB validation state - IBANs processed within 30 days
   const [recentlyProcessedIbans, setRecentlyProcessedIbans] = useState<Map<string, number>>(new Map())
   const [dbValidationLoading, setDbValidationLoading] = useState(true)
 
@@ -133,7 +133,7 @@ export function UploadDetailClient({
       // Blacklisted takes priority
       if (r?.status === 'blacklisted') return 'blacklisted'
       
-      // Check if IBAN was recently processed (within 7 days)
+      // Check if IBAN was recently processed (within 30 days)
       const iban = normalizeIban(getFieldValue(records[index], 'iban'))
       if (iban && recentlyProcessedIbans.has(iban)) return 'validation_error'
       
@@ -147,7 +147,7 @@ export function UploadDetailClient({
       const iban = normalizeIban(getFieldValue(records[index], 'iban'))
       if (iban && recentlyProcessedIbans.has(iban)) {
         const daysAgo = recentlyProcessedIbans.get(iban)
-        return `IBAN processed ${daysAgo} day(s) ago (must wait 7 days)`
+        return `IBAN processed ${daysAgo} day(s) ago (must wait 30 days)`
       }
       
       const validationError = validation.invalidRows.find(inv => inv.index === index)

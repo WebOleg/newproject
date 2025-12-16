@@ -4,12 +4,12 @@ import { requireSession } from '@/lib/auth'
 import { ObjectId } from 'mongodb'
 import { getFieldValue } from '@/lib/field-aliases'
 
-const DAYS_THRESHOLD = 7
+const DAYS_THRESHOLD = 30
 
 /**
  * POST /api/emp/validate-ibans
  *
- * Checks if IBANs exist in (within last 7 days):
+ * Checks if IBANs exist in (within last 30 days):
  * 1. emp_reconcile_transactions (recently processed)
  * 2. uploads collection (recently uploaded)
  * 3. uploads collection rows (submitted to EMP gateway)
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const reconcileCollection = db.collection('emp_reconcile_transactions')
     const uploadsCollection = db.collection('uploads')
 
-    // Calculate date threshold (7 days ago)
+    // Calculate date threshold (30 days ago)
     const thresholdDate = new Date()
     thresholdDate.setDate(thresholdDate.getDate() - DAYS_THRESHOLD)
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         { bankAccountNumber: { $in: normalizedIbans } },
         { bank_account_number: { $in: normalizedIbans } }
       ],
-      transactionDateObj: { $gte: thresholdDate }  // Within last 7 days
+      transactionDateObj: { $gte: thresholdDate }  // Within last 30 days
     }).project({
       bankAccountNumber: 1,
       bank_account_number: 1,

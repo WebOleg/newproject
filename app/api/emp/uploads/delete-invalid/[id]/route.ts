@@ -55,8 +55,8 @@ export async function DELETE(req: Request, ctx: { params: { id: string } }) {
       }
     })
 
-    // Check for IBANs processed within last 7 days (7-day rule)
-    const DAYS_THRESHOLD = 7
+    // Check for IBANs processed within last 30 days (30-day rule)
+    const DAYS_THRESHOLD = 30
     const thresholdDate = new Date()
     thresholdDate.setDate(thresholdDate.getDate() - DAYS_THRESHOLD)
 
@@ -118,7 +118,7 @@ export async function DELETE(req: Request, ctx: { params: { id: string } }) {
 
           // Check if this IBAN is in our list
           if (normalizedIbans.includes(normalizedIban)) {
-            // Check if uploaded within 7 days OR submitted to EMP within 7 days
+            // Check if uploaded within 30 days OR submitted to EMP within 30 days
             const wasSubmittedToEmp = row?.emp || row?.status === 'approved' || row?.status === 'submitted' || row?.status === 'error'
             const relevantDate = wasSubmittedToEmp && upload.updatedAt ? upload.updatedAt : upload.createdAt
 

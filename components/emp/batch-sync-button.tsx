@@ -60,7 +60,7 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses
       }
     }
 
-    // Check for IBANs already processed (older than 7 days)
+    // Check for IBANs already processed (older than 30 days)
     if (rows.length > 0) {
       try {
         const ibans = rows
