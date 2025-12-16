@@ -50,11 +50,66 @@ export async function createUser(data: {
       status: 'active',
       createdAt: now,
       updatedAt: now,
+      // Initialize 2FA fields
+      twoFactorEnabled: false,
+      twoFactorBackupCodes: [],
+      twoFactorSetupRequired: true,
     }
 
     const result = await col.insertOne(user)
     return { ...user, _id: result.insertedId }
   }, 'createUser')
+}
+
+export async function createInvitedUser(data: {
+  email: string
+  name: string
+  role: UserRole
+  agencyId?: string
+  accountId?: string
+}): Promise<{ user: User; setupToken: string }> {
+  return withDbErrorHandling(async () => {
+    const col = await getCollection<User>(USERS_COLLECTION)
+
+    const existing = await col.findOne({ email: data.email.toLowerCase() })
+    if (existing) {
+      throw new Error('User with this email already exists')
+    }
+
+    // Generate password setup token (32 bytes = 64 hex chars)
+    const tokenBytes = new Uint8Array(32)
+    crypto.getRandomValues(tokenBytes)
+    const setupToken = Array.from(tokenBytes)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+
+    const now = new Date()
+    const user: User = {
+      email: data.email.toLowerCase(),
+      passwordHash: '', // No password yet
+      name: data.name,
+      role: data.role,
+      agencyId: data.agencyId ? new ObjectId(data.agencyId) : undefined,
+      accountId: data.accountId ? new ObjectId(data.accountId) : undefined,
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now,
+      // 2FA fields
+      twoFactorEnabled: false,
+      twoFactorBackupCodes: [],
+      twoFactorSetupRequired: true,
+      // Invitation fields
+      passwordSetupToken: setupToken,
+      passwordSetupTokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      invitedAt: now,
+    }
+
+    const result = await col.insertOne(user)
+    return {
+      user: { ...user, _id: result.insertedId },
+      setupToken
+    }
+  }, 'createInvitedUser')
 }
 
 export async function findUserByEmail(email: string): Promise<User | null> {
