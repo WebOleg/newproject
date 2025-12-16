@@ -5,6 +5,7 @@ import { User } from '../lib/types/auth'
 // Load environment variables
 config()
 
+
 async function enableTwoFactorForExistingUsers() {
   console.log('Starting 2FA migration for existing users...\n')
 

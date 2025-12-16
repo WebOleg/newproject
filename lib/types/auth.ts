@@ -53,6 +53,16 @@ export interface User {
   lastLoginAt?: Date
   createdAt: Date
   updatedAt: Date
+
+  // 2FA fields
+  twoFactorEnabled?: boolean
+  twoFactorBackupCodes?: string[]
+  twoFactorSetupRequired?: boolean
+
+  // Invitation fields
+  passwordSetupToken?: string
+  passwordSetupTokenExpiry?: Date
+  invitedAt?: Date
 }
 
 export interface Session {
@@ -60,6 +70,18 @@ export interface Session {
   userId: ObjectId
   token: string
   expiresAt: Date
+  createdAt: Date
+  userAgent?: string
+  ip?: string
+}
+
+export interface OTPCode {
+  _id?: ObjectId
+  userId: ObjectId
+  code: string              // Hashed 6-digit code
+  purpose: 'login' | 'recovery'
+  expiresAt: Date          // 5 minutes from creation
+  attempts: number         // Track failed attempts (max 3)
   createdAt: Date
   userAgent?: string
   ip?: string
