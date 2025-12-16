@@ -78,6 +78,9 @@ interface StatsData {
   transactionsByScheme: any[]
   transactionTimeline: any[]
   chargebacksByReason: any[]
+  approvedByCountry: any[]
+  chargebacksByCountry: any[]
+  chargebacksByBank: any[]
   rawReconcileCount: number
 }
 
@@ -92,6 +95,9 @@ const DEFAULT_STATS: StatsData = {
   transactionsByScheme: [],
   transactionTimeline: [],
   chargebacksByReason: [],
+  approvedByCountry: [],
+  chargebacksByCountry: [],
+  chargebacksByBank: [],
   rawReconcileCount: 0
 }
 
@@ -786,6 +792,137 @@ export default function AnalyticsPage() {
                     />
                     <Legend />
                     <Bar dataKey="value" fill="#ff4444" name="Count" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Approved Transactions & Chargebacks by Country */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Approved Transactions & Chargebacks by Country</h3>
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={stats.approvedByCountry}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="country" />
+                    <YAxis />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload
+                          return (
+                            <div className="rounded-md border bg-background p-3 text-sm shadow-lg">
+                              <div className="font-semibold mb-1">{data.country}</div>
+                              <div className="text-green-600">Approved: {data.approved}</div>
+                              <div className="text-red-600">Chargebacks: {data.chargebacks}</div>
+                              <div className="text-muted-foreground">Total: {data.total}</div>
+                              <div className="font-medium mt-1">Rate: {data.chargebackRate}</div>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="approved" fill="#22c55e" name="Approved" stackId="a" />
+                    <Bar dataKey="chargebacks" fill="#ef4444" name="Chargebacks" stackId="a" />
+                  </BarChart>
+                </ResponsiveContainer>
+
+                {/* Country Stats Table */}
+                <div className="mt-4 rounded-md border overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50">
+                      <tr className="border-b">
+                        <th className="py-2 px-4 text-left text-sm font-medium">Country</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">Total</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">Approved</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">Chargebacks</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">CB Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.approvedByCountry.map((item, idx) => (
+                        <tr key={idx} className="border-b last:border-0 hover:bg-muted/30">
+                          <td className="py-2 px-4 text-sm font-medium">{item.country}</td>
+                          <td className="py-2 px-4 text-sm text-right">{item.total}</td>
+                          <td className="py-2 px-4 text-sm text-right text-green-600">{item.approved}</td>
+                          <td className="py-2 px-4 text-sm text-right text-red-600">{item.chargebacks}</td>
+                          <td className="py-2 px-4 text-sm text-right font-medium">{item.chargebackRate}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Chargebacks by Country */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Transactions & Chargebacks by Country</h3>
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={stats.chargebacksByCountry}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="country" />
+                    <YAxis />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload
+                          return (
+                            <div className="rounded-md border bg-background p-3 text-sm shadow-lg">
+                              <div className="font-semibold mb-1">{data.country}</div>
+                              <div className="text-green-600">Successful: {data.successful}</div>
+                              <div className="text-red-600">Chargebacks: {data.chargebacks}</div>
+                              <div className="text-muted-foreground">Total: {data.total}</div>
+                              <div className="font-medium mt-1">Rate: {data.chargebackRate}</div>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="successful" fill="#22c55e" name="Successful" stackId="a" />
+                    <Bar dataKey="chargebacks" fill="#ef4444" name="Chargebacks" stackId="a" />
+                  </BarChart>
+                </ResponsiveContainer>
+
+                {/* Country Stats Table */}
+                <div className="mt-4 rounded-md border overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50">
+                      <tr className="border-b">
+                        <th className="py-2 px-4 text-left text-sm font-medium">Country</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">Total</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">Successful</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">Chargebacks</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">CB Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.chargebacksByCountry.map((item, idx) => (
+                        <tr key={idx} className="border-b last:border-0 hover:bg-muted/30">
+                          <td className="py-2 px-4 text-sm font-medium">{item.country}</td>
+                          <td className="py-2 px-4 text-sm text-right">{item.total}</td>
+                          <td className="py-2 px-4 text-sm text-right text-green-600">{item.successful}</td>
+                          <td className="py-2 px-4 text-sm text-right text-red-600">{item.chargebacks}</td>
+                          <td className="py-2 px-4 text-sm text-right font-medium">{item.chargebackRate}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Chargebacks by Bank */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Chargebacks by Bank</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={stats.chargebacksByBank} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis dataKey="bank" type="category" width={100} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="value" fill="#8884d8" name="Count" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

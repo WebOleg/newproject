@@ -8,6 +8,8 @@ import { ObjectId } from 'mongodb'
 import { requireSession } from '@/lib/auth'
 import { getBlacklistedIbans } from '@/lib/blacklist'
 import { getFieldValue } from '@/lib/field-aliases'
+import { ibanHasApprovedTransactions } from '@/lib/validation-server'
+import { normalizeIban } from '@/lib/validation'
 
 export const runtime = 'nodejs'
 
@@ -135,7 +137,7 @@ export async function POST(req: Request) {
       .map(r => getFieldValue(r, 'iban'))
       .filter((iban): iban is string => !!iban)
       .map(iban => iban.replace(/\s/g, '').toUpperCase())
-    
+
     let blacklistedIbans: Set<string> = new Set()
     try {
       blacklistedIbans = await getBlacklistedIbans(ibans)
@@ -145,6 +147,27 @@ export async function POST(req: Request) {
     } catch (blError: any) {
       console.error('[Upload] Blacklist check error:', blError)
       // Continue without blacklist check if it fails
+    }
+
+    // 9. Check for approved transaction history
+    const ibansWithoutHistory: Set<string> = new Set()
+    try {
+      const uniqueIbans = Array.from(new Set(ibans))
+      console.log(`[Upload] Checking ${uniqueIbans.length} unique IBAN(s) for approved transaction history`)
+
+      for (const iban of uniqueIbans) {
+        const hasHistory = await ibanHasApprovedTransactions(iban)
+        if (!hasHistory) {
+          ibansWithoutHistory.add(iban)
+        }
+      }
+
+      if (ibansWithoutHistory.size > 0) {
+        console.log(`[Upload] Found ${ibansWithoutHistory.size} IBAN(s) without approved transaction history`)
+      }
+    } catch (historyError: any) {
+      console.error('[Upload] Transaction history check error:', historyError)
+      // Continue without history check if it fails
     }
 
     const totalRecords = records.length
@@ -167,21 +190,36 @@ export async function POST(req: Request) {
       const recordCount = chunkRecords.length
       const partNumber = idx + 1
 
-      // Create rows with blacklist status
+      // Create rows with blacklist and transaction history status
       const rows = chunkRecords.map((record, rowIdx) => {
         const iban = getFieldValue(record, 'iban')
         const normalizedIban = iban ? iban.replace(/\s/g, '').toUpperCase() : ''
         const isBlacklisted = blacklistedIbans.has(normalizedIban)
-        
+        const hasNoHistory = ibansWithoutHistory.has(normalizedIban)
+
+        // Determine status priority: blacklisted > no_history > pending
+        let status = 'pending'
+        let errorReason = ''
+
+        if (isBlacklisted) {
+          status = 'blacklisted'
+          errorReason = 'IBAN in blacklist'
+        } else if (hasNoHistory) {
+          status = 'error'
+          errorReason = 'IBAN has no approved transaction history'
+        }
+
         return {
-          status: isBlacklisted ? 'blacklisted' : 'pending',
+          status,
           attempts: 0,
           originalRowNumber: start + rowIdx + 1,
-          ...(isBlacklisted && { blacklistedAt: now, blacklistReason: 'IBAN in blacklist' })
+          ...(isBlacklisted && { blacklistedAt: now, blacklistReason: 'IBAN in blacklist' }),
+          ...(hasNoHistory && !isBlacklisted && { error: errorReason })
         }
       })
 
       const blacklistedCount = rows.filter(r => r.status === 'blacklisted').length
+      const noHistoryCount = rows.filter(r => r.status === 'error' && r.error?.includes('no approved transaction history')).length
 
       return {
         filename: totalParts > 1 ? `${file.name} (Part ${partNumber}/${totalParts})` : file.name,
@@ -197,7 +235,7 @@ export async function POST(req: Request) {
         records: chunkRecords,
         rows,
         approvedCount: 0,
-        errorCount: 0,
+        errorCount: noHistoryCount,
         blacklistedCount,
         partNumber,
         partTotal: totalParts,
@@ -237,18 +275,21 @@ export async function POST(req: Request) {
       .map(([, value]) => value.toString())
 
     const totalBlacklisted = docs.reduce((sum, d) => sum + (d.blacklistedCount || 0), 0)
-    console.log(`[Upload] Saved ${docs.length} document(s) for file ${file.name}${totalBlacklisted > 0 ? ` (${totalBlacklisted} blacklisted)` : ''}`)
+    const totalNoHistory = docs.reduce((sum, d) => sum + (d.errorCount || 0), 0)
+    console.log(`[Upload] Saved ${docs.length} document(s) for file ${file.name}${totalBlacklisted > 0 ? ` (${totalBlacklisted} blacklisted)` : ''}${totalNoHistory > 0 ? ` (${totalNoHistory} without history)` : ''}`)
 
     return NextResponse.json({
       ok: true,
       totalRecords,
       parts: docs.length,
       blacklistedCount: totalBlacklisted,
+      noHistoryCount: totalNoHistory,
       uploads: docs.map((chunk, idx) => ({
         id: insertedIds[idx],
         filename: chunk.filename,
         recordCount: chunk.recordCount,
         blacklistedCount: chunk.blacklistedCount,
+        errorCount: chunk.errorCount,
         partNumber: chunk.partNumber,
         partTotal: chunk.partTotal,
         recordRange: [chunk.recordStartIndex + 1, chunk.recordEndIndex + 1],

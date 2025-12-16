@@ -99,13 +99,99 @@ export async function GET(request: NextRequest) {
             }
         ]).toArray()
 
-        // --- 2. Chargebacks Aggregation ---
+        // --- 2. Approved Transactions by Country (only approved, excluding pending_async and chargebacked) ---
+        const approvedByCountryPromise = txColl.aggregate([
+            {
+                $match: {
+                    ...txFilter,
+                    type: { $nin: secondaryTypes },
+                    status: 'approved' // Only approved transactions
+                }
+            },
+            {
+                $addFields: {
+                    countryCode: {
+                        $cond: {
+                            if: { $and: [
+                                { $ne: ['$bankAccountNumber', null] },
+                                { $ne: ['$bankAccountNumber', ''] },
+                                { $gte: [{ $strLenCP: '$bankAccountNumber' }, 2] }
+                            ]},
+                            then: { $toUpper: { $substrCP: ['$bankAccountNumber', 0, 2] } },
+                            else: 'Unknown'
+                        }
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: '$countryCode',
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { count: -1 } }
+        ]).toArray()
+
+        // --- 2b. All Transactions by Country (including chargebacked) ---
+        const txByCountryPromise = txColl.aggregate([
+            {
+                $match: {
+                    ...txFilter,
+                    type: { $nin: secondaryTypes },
+                    status: { $in: ['approved', 'pending_async', 'chargebacked'] }
+                }
+            },
+            {
+                $addFields: {
+                    countryCode: {
+                        $cond: {
+                            if: { $and: [
+                                { $ne: ['$bankAccountNumber', null] },
+                                { $ne: ['$bankAccountNumber', ''] },
+                                { $gte: [{ $strLenCP: '$bankAccountNumber' }, 2] }
+                            ]},
+                            then: { $toUpper: { $substrCP: ['$bankAccountNumber', 0, 2] } },
+                            else: 'Unknown'
+                        }
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: '$countryCode',
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { count: -1 } }
+        ]).toArray()
+
+        // --- 3. Chargebacks Aggregation ---
         const cbBaseFilter: any = { postDateObj: { $gte: start, $lte: end } }
         const cbOrgFilter = await buildChargebackFilter(session)
         const cbFilter = cbOrgFilter ? { $and: [cbBaseFilter, cbOrgFilter] } : cbBaseFilter
 
+        // Aggregate chargebacks with lookup to original transactions for IBAN data
         const cbStatsPromise = cbColl.aggregate([
             { $match: cbFilter },
+            {
+                $lookup: {
+                    from: 'emp_reconcile_transactions',
+                    localField: 'originalTransactionUniqueId',
+                    foreignField: 'uniqueId',
+                    as: 'originalTransaction'
+                }
+            },
+            {
+                $addFields: {
+                    // Get IBAN from original transaction or use cardNumber as fallback
+                    iban: {
+                        $ifNull: [
+                            { $arrayElemAt: ['$originalTransaction.bankAccountNumber', 0] },
+                            '$cardNumber'
+                        ]
+                    }
+                }
+            },
             {
                 $facet: {
                     totalCount: [{ $count: 'count' }],
@@ -119,14 +205,98 @@ export async function GET(request: NextRequest) {
                         },
                         { $sort: { count: -1 } },
                         { $limit: 10 }
+                    ],
+                    byCountry: [
+                        {
+                            $addFields: {
+                                // Extract country code from IBAN (first 2 characters)
+                                countryCode: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$iban', null] },
+                                            { $ne: ['$iban', ''] },
+                                            { $gte: [{ $strLenCP: '$iban' }, 2] }
+                                        ]},
+                                        then: { $toUpper: { $substrCP: ['$iban', 0, 2] } },
+                                        else: 'Unknown'
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: '$countryCode',
+                                count: { $sum: 1 }
+                            }
+                        },
+                        { $sort: { count: -1 } },
+                        { $limit: 10 }
+                    ],
+                    byBank: [
+                        {
+                            $addFields: {
+                                // Extract country code (first 2 chars)
+                                countryCode: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$iban', null] },
+                                            { $ne: ['$iban', ''] },
+                                            { $gte: [{ $strLenCP: '$iban' }, 2] }
+                                        ]},
+                                        then: { $toUpper: { $substrCP: ['$iban', 0, 2] } },
+                                        else: 'XX'
+                                    }
+                                },
+                                // Extract bank code from IBAN (characters 4-7 for most IBANs)
+                                bankCode: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$iban', null] },
+                                            { $ne: ['$iban', ''] },
+                                            { $gte: [{ $strLenCP: '$iban' }, 8] }
+                                        ]},
+                                        then: { $substrCP: ['$iban', 4, 4] },
+                                        else: 'Unknown'
+                                    }
+                                },
+                                // Combine country code and bank code
+                                bankWithCountry: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$iban', null] },
+                                            { $ne: ['$iban', ''] },
+                                            { $gte: [{ $strLenCP: '$iban' }, 8] }
+                                        ]},
+                                        then: {
+                                            $concat: [
+                                                { $toUpper: { $substrCP: ['$iban', 0, 2] } },
+                                                '-',
+                                                { $substrCP: ['$iban', 4, 4] }
+                                            ]
+                                        },
+                                        else: 'Unknown'
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: '$bankWithCountry',
+                                count: { $sum: 1 }
+                            }
+                        },
+                        { $sort: { count: -1 } },
+                        { $limit: 10 }
                     ]
                 }
             }
         ]).toArray()
 
-        const [rawCount, baseStatsResults, cbResults] = await Promise.all([
+        const [rawCount, baseStatsResults, approvedByCountryResults, txByCountryResults, cbResults] = await Promise.all([
             rawCountPromise,
             baseStatsPromise,
+            approvedByCountryPromise,
+            txByCountryPromise,
             cbStatsPromise
         ])
 
@@ -206,6 +376,70 @@ export async function GET(request: NextRequest) {
             description: i.description || ''
         }))
 
+        // Merge approved-only transactions and chargebacks by country
+        const approvedByCountryMap = new Map(
+            approvedByCountryResults.map((item: any) => [item._id, item.count])
+        )
+        const cbByCountryMapForApproved = new Map(
+            (cbData.byCountry || []).map((item: any) => [item._id, item.count])
+        )
+
+        const allCountriesApproved = new Set([...approvedByCountryMap.keys(), ...cbByCountryMapForApproved.keys()])
+
+        const approvedByCountry = Array.from(allCountriesApproved)
+            .map(country => {
+                const approved = Number(approvedByCountryMap.get(country) || 0)
+                const chargebacks = Number(cbByCountryMapForApproved.get(country) || 0)
+                const total = approved + chargebacks
+                const chargebackRateNum = total > 0 ? (chargebacks / total) * 100 : 0
+
+                return {
+                    country: country || 'Unknown',
+                    total: total,
+                    approved: approved,
+                    chargebacks: chargebacks,
+                    chargebackRate: chargebackRateNum.toFixed(2) + '%'
+                }
+            })
+            .filter(item => item.total > 0)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10)
+
+        // Merge transactions and chargebacks by country
+        const txByCountryMap = new Map(
+            txByCountryResults.map((item: any) => [item._id, item.count])
+        )
+        const cbByCountryMap = new Map(
+            (cbData.byCountry || []).map((item: any) => [item._id, item.count])
+        )
+
+        // Get all unique countries
+        const allCountries = new Set([...txByCountryMap.keys(), ...cbByCountryMap.keys()])
+
+        const chargebacksByCountry = Array.from(allCountries)
+            .map(country => {
+                const totalTx = Number(txByCountryMap.get(country) || 0)
+                const chargebacks = Number(cbByCountryMap.get(country) || 0)
+                const successful = totalTx - chargebacks
+                const chargebackRateNum = totalTx > 0 ? (chargebacks / totalTx) * 100 : 0
+
+                return {
+                    country: country || 'Unknown',
+                    total: totalTx,
+                    successful: successful,
+                    chargebacks: chargebacks,
+                    chargebackRate: chargebackRateNum.toFixed(2) + '%'
+                }
+            })
+            .filter(item => item.total > 0)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10)
+
+        const chargebacksByBank = (cbData.byBank || []).map((i: any) => ({
+            bank: i._id || 'Unknown',
+            value: i.count
+        }))
+
         const stats = {
             totalTransactions: approvedCount,
             baseTransactionsCount: baseCount,
@@ -217,6 +451,9 @@ export async function GET(request: NextRequest) {
             transactionsByScheme,
             transactionTimeline,
             chargebacksByReason,
+            approvedByCountry,
+            chargebacksByCountry,
+            chargebacksByBank,
             rawReconcileCount: rawCount
         }
 
