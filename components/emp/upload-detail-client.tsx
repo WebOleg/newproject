@@ -42,6 +42,7 @@ import { AlertTriangle } from 'lucide-react'
 import { useSession } from '@/contexts/session-context'
 import { validateRows, normalizeIban } from '@/lib/validation'
 import { getFieldValue } from '@/lib/field-aliases'
+import { ClientDate } from '@/components/ui/client-date'
 
 interface UploadDetailClientProps {
   id: string
@@ -418,8 +419,8 @@ export function UploadDetailClient({
                 </div>
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span className="hidden sm:inline text-sm">{new Date(createdAt).toLocaleString()}</span>
-                  <span className="sm:hidden text-sm">{new Date(createdAt).toLocaleDateString()}</span>
+                  <ClientDate date={createdAt} format="full" className="hidden sm:inline text-sm" />
+                  <ClientDate date={createdAt} format="date" className="sm:hidden text-sm" />
                 </div>
               </div>
             </div>
@@ -729,7 +730,7 @@ export function UploadDetailClient({
                 <h3 className="text-base sm:text-lg font-semibold">Reconciliation Report</h3>
                 {lastReconciledAt && (
                   <span className="text-xs sm:text-sm text-muted-foreground">
-                    Last: {new Date(lastReconciledAt).toLocaleString()}
+                    Last: <ClientDate date={lastReconciledAt} format="full" />
                   </span>
                 )}
               </div>
