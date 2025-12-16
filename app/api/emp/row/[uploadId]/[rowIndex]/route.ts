@@ -5,6 +5,7 @@ import { mapRecordToSddSale, type FieldMapping, stripRetrySuffix, buildRetryTran
 import { submitSddSale, maskIban, type SddSaleResponse } from '@/lib/emerchantpay'
 import { reconcileTransaction } from '@/lib/emerchantpay-reconcile'
 import { requireWriteAccess } from '@/lib/auth'
+import { check30DayThreshold, extractIbansFromRecords } from '@/lib/emp-threshold'
 
 export const runtime = 'nodejs'
 
@@ -75,6 +76,30 @@ export async function POST(_req: Request, ctx: { params: { uploadId: string; row
     const rows = (doc.rows && Array.isArray(doc.rows) && doc.rows.length === records.length)
       ? doc.rows
       : records.map(() => ({ status: 'pending', attempts: 0 }))
+
+    // Check 30-day threshold before submission
+    const ibansToCheck = extractIbansFromRecords([records[rowIndex]])
+    if (ibansToCheck.length > 0) {
+      const thresholdResult = await check30DayThreshold(db, ibansToCheck.map(item => ({ ...item, rowIndex })), uploadId)
+
+      if (thresholdResult.violations.length > 0) {
+        const violation = thresholdResult.violations[0]
+        rows[rowIndex].status = 'error'
+        rows[rowIndex].emp = {
+          message: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait 30 days)`
+        }
+        rows[rowIndex].attempts = (rows[rowIndex].attempts || 0) + 1
+        rows[rowIndex].lastAttemptAt = new Date()
+
+        await uploads.updateOne({ _id: doc._id }, { $set: { rows, updatedAt: new Date() } })
+
+        return NextResponse.json({
+          ok: false,
+          error: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait 30 days)`,
+          row: rows[rowIndex]
+        }, { status: 400 })
+      }
+    }
 
     let request
     try {

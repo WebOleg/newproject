@@ -5,6 +5,7 @@ import { mapRecordToSddSale, type FieldMapping, stripRetrySuffix, buildRetryTran
 import { submitSddSale, maskIban, type SddSaleResponse } from '@/lib/emerchantpay'
 import { reconcileTransaction } from '@/lib/emerchantpay-reconcile'
 import { requireWriteAccess } from '@/lib/auth'
+import { check30DayThreshold, extractIbansFromRecords } from '@/lib/emp-threshold'
 
 export const runtime = 'nodejs'
 
@@ -80,6 +81,33 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
       ? doc.rows
       : records.map(() => ({ status: 'pending', attempts: 0 }))
 
+    // Check 30-day threshold before submission
+    const recordsToCheck = selection
+      ? records.filter((_, i) => selection.has(i))
+      : records
+    const ibansToCheck = extractIbansFromRecords(recordsToCheck)
+
+    if (ibansToCheck.length > 0) {
+      const thresholdResult = await check30DayThreshold(db, ibansToCheck, id)
+
+      if (thresholdResult.violations.length > 0) {
+        // Mark violating rows as error
+        for (const violation of thresholdResult.violations) {
+          rows[violation.rowIndex].status = 'error'
+          rows[violation.rowIndex].emp = {
+            message: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait 30 days)`
+          }
+          rows[violation.rowIndex].attempts = (rows[violation.rowIndex].attempts || 0) + 1
+          rows[violation.rowIndex].lastAttemptAt = new Date()
+        }
+
+        // Update database with error rows
+        await uploads.updateOne({ _id: doc._id }, { $set: { rows, updatedAt: new Date() } })
+
+        console.log(`[Submit] Marked ${thresholdResult.violations.length} row(s) as threshold violations`)
+      }
+    }
+
     // Concurrency-limited submission with error stop
     const limit = 3
     let inFlight = 0
@@ -93,6 +121,11 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
       if (cursor >= records.length || shouldStop) return
       const i = cursor++
       if (selection && !selection.has(i)) {
+        return runNext()
+      }
+
+      // Skip rows that are already approved, blacklisted, or have errors
+      if (rows[i]?.status === 'approved' || rows[i]?.status === 'blacklisted' || rows[i]?.status === 'error') {
         return runNext()
       }
 
