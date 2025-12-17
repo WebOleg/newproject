@@ -81,7 +81,7 @@ interface StatsData {
   approvedByCountry: any[]
   chargebacksByCountry: any[]
   chargebacksByBank: any[]
-  chargebacksByAmount: any[]
+  transactionsByAmount: any[]
   rawReconcileCount: number
 }
 
@@ -99,7 +99,7 @@ const DEFAULT_STATS: StatsData = {
   approvedByCountry: [],
   chargebacksByCountry: [],
   chargebacksByBank: [],
-  chargebacksByAmount: [],
+  transactionsByAmount: [],
   rawReconcileCount: 0
 }
 
@@ -931,11 +931,11 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* Chargeback Frequency by Amount */}
+              {/* Transactions by Amount */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Most Chargebacked Amounts</h3>
+                <h3 className="text-lg font-semibold mb-4">Approved & Chargebacked Transactions by Amount</h3>
                 <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={stats.chargebacksByAmount} layout="horizontal">
+                  <BarChart data={stats.transactionsByAmount} layout="horizontal">
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="amount"
@@ -955,9 +955,10 @@ export default function AnalyticsPage() {
                               <div className="font-semibold mb-2">
                                 {formatCurrency(d.amount, d.currency)}
                               </div>
-                              <div className="font-medium">
-                                Chargebacked <span className="text-red-600">{d.count}</span> time{d.count > 1 ? 's' : ''}
-                              </div>
+                              <div className="text-green-600">Approved: {d.approved}</div>
+                              <div className="text-red-600">Chargebacks: {d.chargebacks}</div>
+                              <div className="text-muted-foreground">Total: {d.total}</div>
+                              <div className="font-medium mt-1">Rate: {d.chargebackRate}</div>
                             </div>
                           )
                         }
@@ -965,15 +966,12 @@ export default function AnalyticsPage() {
                       }}
                     />
                     <Legend />
-                    <Bar
-                      dataKey="count"
-                      name="Number of Chargebacks"
-                      fill="#ef4444"
-                    />
+                    <Bar dataKey="approved" fill="#22c55e" name="Approved" stackId="a" />
+                    <Bar dataKey="chargebacks" fill="#ef4444" name="Chargebacks" stackId="a" />
                   </BarChart>
                 </ResponsiveContainer>
                 <div className="mt-3 text-xs text-muted-foreground">
-                  Shows which transaction amounts were chargebacked most frequently (e.g., €9.99 chargebacked 2 times)
+                  Shows approved and chargebacked transactions grouped by amount (e.g., €9.99: 10 approved, 2 chargebacked)
                 </div>
               </div>
 

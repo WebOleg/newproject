@@ -120,6 +120,23 @@ export async function GET(request: NextRequest) {
                     // Total Base Count
                     totalCount: [
                         { $count: 'count' }
+                    ],
+                    // Approved Transactions by Amount
+                    approvedByAmount: [
+                        {
+                            $match: {
+                                status: 'approved'
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: '$amount',
+                                count: { $sum: 1 },
+                                currency: { $first: '$currency' }
+                            }
+                        },
+                        { $sort: { count: -1 } },
+                        { $limit: 20 }
                     ]
                 }
             }
@@ -483,11 +500,38 @@ export async function GET(request: NextRequest) {
             value: i.count
         }))
 
-        const chargebacksByAmount = (cbData.byAmount || []).map((i: any) => ({
-            amount: i._id,
-            count: i.count,
-            currency: i.currency || 'EUR'
-        }))
+        // Merge approved and chargebacked transactions by amount
+        const approvedByAmountMap = new Map(
+            (baseStatsData.approvedByAmount || []).map((item: any) => [item._id, item.count])
+        )
+        const cbByAmountMap = new Map(
+            (cbData.byAmount || []).map((item: any) => [item._id, { count: item.count, currency: item.currency }])
+        )
+
+        // Get all unique amounts
+        const allAmounts = new Set([...approvedByAmountMap.keys(), ...cbByAmountMap.keys()])
+
+        const transactionsByAmount = Array.from(allAmounts)
+            .map(amount => {
+                const approved = Number(approvedByAmountMap.get(amount) || 0)
+                const cbInfo: any = cbByAmountMap.get(amount)
+                const chargebacks = cbInfo ? Number(cbInfo.count || 0) : 0
+                const currency = cbInfo?.currency || 'EUR'
+                const total = approved + chargebacks
+                const chargebackRateNum = total > 0 ? (chargebacks / total) * 100 : 0
+
+                return {
+                    amount: amount,
+                    total: total,
+                    approved: approved,
+                    chargebacks: chargebacks,
+                    chargebackRate: chargebackRateNum.toFixed(2) + '%',
+                    currency: currency
+                }
+            })
+            .filter(item => item.total > 0)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 20)
 
         const stats = {
             totalTransactions: approvedCount,
@@ -503,7 +547,7 @@ export async function GET(request: NextRequest) {
             approvedByCountry,
             chargebacksByCountry,
             chargebacksByBank,
-            chargebacksByAmount,
+            transactionsByAmount,
             rawReconcileCount: rawCount
         }
 
