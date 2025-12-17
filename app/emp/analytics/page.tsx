@@ -919,7 +919,7 @@ export default function AnalyticsPage() {
                   <BarChart data={stats.chargebacksByBank} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" />
-                    <YAxis dataKey="bank" type="category" width={100} />
+                    <YAxis dataKey="bank" type="category" width={180} />
                     <Tooltip />
                     <Legend />
                     <Bar dataKey="value" fill="#8884d8" name="Count" />
