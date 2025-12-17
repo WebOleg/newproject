@@ -67,3 +67,8 @@ storybook-static/
 *.tar.gz
 backups/
 tmp/
+
+# ---------------------------------------
+# Database utility scripts
+# ---------------------------------------
+scripts/duplicate-db.ts
