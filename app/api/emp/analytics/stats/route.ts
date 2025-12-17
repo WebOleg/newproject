@@ -6,6 +6,32 @@ import { buildTransactionFilter, buildChargebackFilter } from '@/lib/analytics-h
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// SEPA chargeback reason code descriptions
+const REASON_CODE_DESCRIPTIONS: Record<string, string> = {
+  'AC01': 'Invalid/Incorrect Account Identifier',
+  'AC04': 'Account Closed',
+  'AC06': 'Account Blocked',
+  'AM04': 'Insufficient Funds',
+  'MD01': 'Missing or Invalid Mandate',
+  'MD06': 'Refund Requested by Debtor',
+  'MS02': 'Reason Not Specified (Customer)',
+  'MS03': 'Reason Not Specified (Bank)',
+  'SL01': 'Specific Service by Debtor Agent',
+  'RR04': 'Regulatory Reasons'
+}
+
+// Codes that trigger immediate IBAN blacklisting
+const BLACKLIST_TRIGGER_CODES = ['AC01', 'AC04']
+
+function getReasonDescription(code: string): string {
+  const upperCode = code?.trim().toUpperCase()
+  return REASON_CODE_DESCRIPTIONS[upperCode] || code || 'Unknown'
+}
+
+function triggersBlacklist(code: string): boolean {
+  return BLACKLIST_TRIGGER_CODES.includes(code?.trim().toUpperCase())
+}
+
 export async function GET(request: NextRequest) {
     try {
         const session = await requireSession()
@@ -370,11 +396,17 @@ export async function GET(request: NextRequest) {
             count: i.count
         }))
 
-        const chargebacksByReason = (cbData.byReason || []).map((i: any) => ({
-            code: i._id || 'UNK',
-            value: i.count,
-            description: i.description || ''
-        }))
+        const chargebacksByReason = (cbData.byReason || []).map((i: any) => {
+            const code = i._id || 'UNK'
+            const description = getReasonDescription(code)
+            return {
+                code,
+                name: `${code} - ${description}`,
+                value: i.count,
+                description: i.description || description,
+                blacklistTrigger: triggersBlacklist(code)
+            }
+        })
 
         // Merge approved-only transactions and chargebacks by country
         const approvedByCountryMap = new Map(

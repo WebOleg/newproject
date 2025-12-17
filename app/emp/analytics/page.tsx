@@ -773,17 +773,34 @@ export default function AnalyticsPage() {
                   <BarChart data={stats.chargebacksByReason} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" />
-                    <YAxis dataKey="code" type="category" width={80} />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      width={280}
+                      tick={{ fontSize: 11 }}
+                    />
                     <Tooltip
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                           const p: any = payload[0]
                           const d = p.payload
                           return (
-                            <div className="rounded-md border bg-background p-2 text-sm">
-                              <div className="font-mono">{d.code}</div>
-                              <div className="text-muted-foreground max-w-[240px]">{d.description || 'No description'}</div>
-                              <div className="mt-1">Count: {d.value}</div>
+                            <div className="rounded-md border bg-background p-3 text-sm shadow-lg">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-mono font-semibold">{d.code}</span>
+                                {d.blacklistTrigger && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                    Blacklist
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-muted-foreground max-w-[280px] mb-2">{d.description || 'No description'}</div>
+                              <div className="font-medium">Count: {d.value}</div>
+                              {d.blacklistTrigger && (
+                                <div className="mt-2 pt-2 border-t text-xs text-red-600 dark:text-red-400">
+                                  ⚠️ Triggers immediate IBAN blacklisting
+                                </div>
+                              )}
                             </div>
                           )
                         }
@@ -791,9 +808,27 @@ export default function AnalyticsPage() {
                       }}
                     />
                     <Legend />
-                    <Bar dataKey="value" fill="#ff4444" name="Count" />
+                    <Bar
+                      dataKey="value"
+                      name="Count"
+                      shape={(props: any) => {
+                        const { fill, x, y, width, height, payload } = props
+                        const barFill = payload.blacklistTrigger ? '#dc2626' : '#ff4444'
+                        return <rect x={x} y={y} width={width} height={height} fill={barFill} />
+                      }}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
+                <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#dc2626' }}></div>
+                    <span>Immediate Blacklist (AC01, AC04)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ff4444' }}></div>
+                    <span>Standard Chargeback</span>
+                  </div>
+                </div>
               </div>
 
               {/* Approved Transactions & Chargebacks by Country */}

@@ -135,6 +135,9 @@ export const CHARGEBACK_REASON_CODES: Record<string, string> = {
   'AC04': 'Account closed',
   'AC06': 'Account blocked',
 
+  // Amount-related
+  'AM04': 'Insufficient funds',
+
   // Mandate-related
   'MD01': 'Missing or invalid mandate',
   'MD06': 'Refund requested by debtor (authorized SDD, up to 8 weeks)',
@@ -142,6 +145,9 @@ export const CHARGEBACK_REASON_CODES: Record<string, string> = {
   // Miscellaneous/not specified
   'MS02': 'Reason not specified – customer generated',
   'MS03': 'Reason not specified – agent/bank generated',
+
+  // Settlement-related (non-standard)
+  'SL01': 'Specific service offered by debtor agent',
 
   // Regulatory
   'RR04': 'Regulatory reasons (e.g. compliance/legal constraints)'
