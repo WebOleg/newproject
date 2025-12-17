@@ -319,6 +319,92 @@ export default function ChargebackExtractionPage() {
               </Card>
             </div>
 
+            {/* Chargeback Distribution by Batch */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingDown className="h-5 w-5" />
+                  Chargeback Distribution by Batch
+                </CardTitle>
+                <CardDescription>
+                  Breakdown of chargebacks across uploaded files
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Filename</TableHead>
+                        <TableHead>Upload Date</TableHead>
+                        <TableHead className="text-right">Total Trans.</TableHead>
+                        <TableHead className="text-right">Chargebacks</TableHead>
+                        <TableHead className="text-right">CB Amount</TableHead>
+                        <TableHead className="w-[200px]">CB Rate</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredBatches.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                            No batches found
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredBatches.map((batch, index) => {
+                          const cbPercentage = ((batch.chargebacks.length / batch.totalTransactions) * 100).toFixed(2)
+                          const cbAmount = batch.chargebacks.reduce((sum, cb) => sum + cb.amount, 0)
+                          const percentageNum = parseFloat(cbPercentage)
+
+                          return (
+                            <TableRow key={index} className="hover:bg-muted/50">
+                              <TableCell className="font-medium">
+                                <TruncatedFilename filename={batch.filename} maxLength={isMobile ? 20 : 40} />
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">{formatDate(batch.uploadDate)}</TableCell>
+                              <TableCell className="text-right">{batch.totalTransactions.toLocaleString()}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex flex-col items-end gap-1">
+                                  <span className="font-semibold text-red-600">{batch.chargebacks.length}</span>
+                                  <Badge variant="destructive" className="text-xs">
+                                    {cbPercentage}%
+                                  </Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right font-semibold">
+                                {formatCurrency(cbAmount)}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-300 flex items-center justify-end pr-2"
+                                      style={{ width: `${Math.min(percentageNum, 100)}%` }}
+                                    >
+                                      {percentageNum >= 15 && (
+                                        <span className="text-xs font-semibold text-white">
+                                          {cbPercentage}%
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {percentageNum < 15 && (
+                                    <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                                      {cbPercentage}%
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Search */}
             <Card>
               <CardHeader>
