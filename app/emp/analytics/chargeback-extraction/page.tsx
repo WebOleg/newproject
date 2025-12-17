@@ -376,23 +376,15 @@ export default function ChargebackExtractionPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                                  <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden relative">
                                     <div
-                                      className="h-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-300 flex items-center justify-end pr-2"
+                                      className="h-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-300"
                                       style={{ width: `${Math.min(percentageNum, 100)}%` }}
-                                    >
-                                      {percentageNum >= 15 && (
-                                        <span className="text-xs font-semibold text-white">
-                                          {cbPercentage}%
-                                        </span>
-                                      )}
-                                    </div>
+                                    />
                                   </div>
-                                  {percentageNum < 15 && (
-                                    <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                                      {cbPercentage}%
-                                    </span>
-                                  )}
+                                  <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap min-w-[45px] text-right">
+                                    {cbPercentage}%
+                                  </span>
                                 </div>
                               </TableCell>
                             </TableRow>
