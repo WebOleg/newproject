@@ -81,6 +81,7 @@ interface StatsData {
   approvedByCountry: any[]
   chargebacksByCountry: any[]
   chargebacksByBank: any[]
+  chargebacksByAmount: any[]
   rawReconcileCount: number
 }
 
@@ -98,6 +99,7 @@ const DEFAULT_STATS: StatsData = {
   approvedByCountry: [],
   chargebacksByCountry: [],
   chargebacksByBank: [],
+  chargebacksByAmount: [],
   rawReconcileCount: 0
 }
 
@@ -929,6 +931,52 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
+              {/* Chargeback Frequency by Amount */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Most Chargebacked Amounts</h3>
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={stats.chargebacksByAmount} layout="horizontal">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="amount"
+                      tickFormatter={(value) => formatCurrency(value, 'EUR')}
+                      angle={-45}
+                      textAnchor="end"
+                      height={100}
+                      tick={{ fontSize: 10 }}
+                    />
+                    <YAxis />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const d = payload[0].payload
+                          return (
+                            <div className="rounded-md border bg-background p-3 text-sm shadow-lg">
+                              <div className="font-semibold mb-2">
+                                {formatCurrency(d.amount, d.currency)}
+                              </div>
+                              <div className="font-medium">
+                                Chargebacked <span className="text-red-600">{d.count}</span> time{d.count > 1 ? 's' : ''}
+                              </div>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="count"
+                      name="Number of Chargebacks"
+                      fill="#ef4444"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="mt-3 text-xs text-muted-foreground">
+                  Shows which transaction amounts were chargebacked most frequently (e.g., €9.99 chargebacked 2 times)
+                </div>
+              </div>
+
               {/* Approved Transactions & Chargebacks by Country */}
               <div>
                 <h3 className="text-lg font-semibold mb-4">Approved Transactions & Chargebacks by Country</h3>
@@ -1161,7 +1209,9 @@ export default function AnalyticsPage() {
                               <div className="flex items-center gap-1.5">
                                 <span className="font-mono">{cb.reasonCode}</span>
                                 {isBlacklistTrigger && (
-                                  <ShieldAlert className="h-3.5 w-3.5 text-red-600" title="Triggers blacklist" />
+                                  <span title="Triggers blacklist">
+                                    <ShieldAlert className="h-3.5 w-3.5 text-red-600" />
+                                  </span>
                                 )}
                               </div>
                             </td>

@@ -313,6 +313,17 @@ export async function GET(request: NextRequest) {
                         },
                         { $sort: { count: -1 } },
                         { $limit: 10 }
+                    ],
+                    byAmount: [
+                        {
+                            $group: {
+                                _id: '$amount',
+                                count: { $sum: 1 },
+                                currency: { $first: '$currency' }
+                            }
+                        },
+                        { $sort: { count: -1 } },
+                        { $limit: 20 }
                     ]
                 }
             }
@@ -472,6 +483,12 @@ export async function GET(request: NextRequest) {
             value: i.count
         }))
 
+        const chargebacksByAmount = (cbData.byAmount || []).map((i: any) => ({
+            amount: i._id,
+            count: i.count,
+            currency: i.currency || 'EUR'
+        }))
+
         const stats = {
             totalTransactions: approvedCount,
             baseTransactionsCount: baseCount,
@@ -486,6 +503,7 @@ export async function GET(request: NextRequest) {
             approvedByCountry,
             chargebacksByCountry,
             chargebacksByBank,
+            chargebacksByAmount,
             rawReconcileCount: rawCount
         }
 
