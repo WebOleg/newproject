@@ -80,7 +80,9 @@ interface StatsData {
   chargebacksByReason: any[]
   approvedByCountry: any[]
   chargebacksByCountry: any[]
+  approvedByBank: any[]
   chargebacksByBank: any[]
+  transactionsByBank: any[]
   transactionsByAmount: any[]
   rawReconcileCount: number
 }
@@ -98,7 +100,9 @@ const DEFAULT_STATS: StatsData = {
   chargebacksByReason: [],
   approvedByCountry: [],
   chargebacksByCountry: [],
+  approvedByBank: [],
   chargebacksByBank: [],
+  transactionsByBank: [],
   transactionsByAmount: [],
   rawReconcileCount: 0
 }
@@ -1035,7 +1039,7 @@ export default function AnalyticsPage() {
 
               {/* Chargebacks by Country */}
               <div>
-                <h3 className="text-lg font-semibold mb-4">Transactions & Chargebacks by Country</h3>
+                <h3 className="text-lg font-semibold mb-4">Transactions (pending included) & Chargebacks by Country</h3>
                 <ResponsiveContainer width="100%" height={350}>
                   <BarChart data={stats.chargebacksByCountry}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1091,6 +1095,27 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
+              {/* Approved Transactions by Bank */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Approved Transactions by Bank</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={stats.approvedByBank} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" />
+                    <YAxis
+                      dataKey="bank"
+                      type="category"
+                      width={180}
+                      interval={0}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="value" fill="#22c55e" name="Count" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
               {/* Chargebacks by Bank */}
               <div>
                 <h3 className="text-lg font-semibold mb-4">Chargebacks by Bank</h3>
@@ -1110,6 +1135,64 @@ export default function AnalyticsPage() {
                     <Bar dataKey="value" fill="#8884d8" name="Count" />
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+
+              {/* Approved Transactions & Chargebacks by Bank (Merged) */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Approved Transactions & Chargebacks by Bank</h3>
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={stats.transactionsByBank}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="bank" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
+                    <YAxis />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload
+                          return (
+                            <div className="rounded-md border bg-background p-3 text-sm shadow-lg">
+                              <div className="font-semibold mb-1">{data.bank}</div>
+                              <div className="text-green-600">Approved: {data.approved}</div>
+                              <div className="text-red-600">Chargebacks: {data.chargebacks}</div>
+                              <div className="text-muted-foreground">Total: {data.total}</div>
+                              <div className="font-medium mt-1">CB Rate: {data.chargebackRate}</div>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="approved" fill="#22c55e" name="Approved" stackId="a" />
+                    <Bar dataKey="chargebacks" fill="#ef4444" name="Chargebacks" stackId="a" />
+                  </BarChart>
+                </ResponsiveContainer>
+
+                {/* Bank Stats Table */}
+                <div className="mt-4 rounded-md border overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50">
+                      <tr className="border-b">
+                        <th className="py-2 px-4 text-left text-sm font-medium">Bank</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">Total</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">Approved</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">Chargebacks</th>
+                        <th className="py-2 px-4 text-right text-sm font-medium">CB Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.transactionsByBank.map((item, idx) => (
+                        <tr key={idx} className="border-b last:border-0 hover:bg-muted/30">
+                          <td className="py-2 px-4 text-sm font-medium">{item.bank}</td>
+                          <td className="py-2 px-4 text-sm text-right">{item.total}</td>
+                          <td className="py-2 px-4 text-sm text-right text-green-600">{item.approved}</td>
+                          <td className="py-2 px-4 text-sm text-right text-red-600">{item.chargebacks}</td>
+                          <td className="py-2 px-4 text-sm text-right font-medium">{item.chargebackRate}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Chargeback Details Table */}

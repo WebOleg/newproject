@@ -137,6 +137,68 @@ export async function GET(request: NextRequest) {
                         },
                         { $sort: { count: -1 } },
                         { $limit: 20 }
+                    ],
+                    // Approved Transactions by Bank
+                    approvedByBank: [
+                        {
+                            $match: {
+                                status: 'approved'
+                            }
+                        },
+                        {
+                            $addFields: {
+                                // Extract country code (first 2 chars)
+                                countryCode: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$bankAccountNumber', null] },
+                                            { $ne: ['$bankAccountNumber', ''] },
+                                            { $gte: [{ $strLenCP: '$bankAccountNumber' }, 2] }
+                                        ]},
+                                        then: { $toUpper: { $substrCP: ['$bankAccountNumber', 0, 2] } },
+                                        else: 'XX'
+                                    }
+                                },
+                                // Extract bank code from IBAN (characters 4-7 for most IBANs)
+                                bankCode: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$bankAccountNumber', null] },
+                                            { $ne: ['$bankAccountNumber', ''] },
+                                            { $gte: [{ $strLenCP: '$bankAccountNumber' }, 8] }
+                                        ]},
+                                        then: { $substrCP: ['$bankAccountNumber', 4, 4] },
+                                        else: 'Unknown'
+                                    }
+                                },
+                                // Combine country code and bank code
+                                bankWithCountry: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$bankAccountNumber', null] },
+                                            { $ne: ['$bankAccountNumber', ''] },
+                                            { $gte: [{ $strLenCP: '$bankAccountNumber' }, 8] }
+                                        ]},
+                                        then: {
+                                            $concat: [
+                                                { $toUpper: { $substrCP: ['$bankAccountNumber', 0, 2] } },
+                                                '-',
+                                                { $substrCP: ['$bankAccountNumber', 4, 4] }
+                                            ]
+                                        },
+                                        else: 'Unknown'
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: '$bankWithCountry',
+                                count: { $sum: 1 }
+                            }
+                        },
+                        { $sort: { count: -1 } },
+                        { $limit: 10 }
                     ]
                 }
             }
@@ -495,10 +557,44 @@ export async function GET(request: NextRequest) {
             .sort((a, b) => b.total - a.total)
             .slice(0, 10)
 
+        const approvedByBank = (baseStatsData.approvedByBank || []).map((i: any) => ({
+            bank: i._id || 'Unknown',
+            value: i.count
+        }))
+
         const chargebacksByBank = (cbData.byBank || []).map((i: any) => ({
             bank: i._id || 'Unknown',
             value: i.count
         }))
+
+        // Merge approved and chargebacks by bank
+        const approvedByBankMap = new Map(
+            (baseStatsData.approvedByBank || []).map((item: any) => [item._id, item.count])
+        )
+        const cbByBankMap = new Map(
+            (cbData.byBank || []).map((item: any) => [item._id, item.count])
+        )
+
+        const allBanks = new Set([...approvedByBankMap.keys(), ...cbByBankMap.keys()])
+
+        const transactionsByBank = Array.from(allBanks)
+            .map(bank => {
+                const approved = Number(approvedByBankMap.get(bank) || 0)
+                const chargebacks = Number(cbByBankMap.get(bank) || 0)
+                const total = approved + chargebacks
+                const chargebackRateNum = total > 0 ? (chargebacks / total) * 100 : 0
+
+                return {
+                    bank: bank || 'Unknown',
+                    total: total,
+                    approved: approved,
+                    chargebacks: chargebacks,
+                    chargebackRate: chargebackRateNum.toFixed(2) + '%'
+                }
+            })
+            .filter(item => item.total > 0)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10)
 
         // Merge approved and chargebacked transactions by amount
         const approvedByAmountMap = new Map(
@@ -546,7 +642,9 @@ export async function GET(request: NextRequest) {
             chargebacksByReason,
             approvedByCountry,
             chargebacksByCountry,
+            approvedByBank,
             chargebacksByBank,
+            transactionsByBank,
             transactionsByAmount,
             rawReconcileCount: rawCount
         }
