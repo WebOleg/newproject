@@ -111,6 +111,8 @@ export default function AnalyticsPage() {
   const [isLoadingStats, setIsLoadingStats] = useState(true)
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isBlacklisting, setIsBlacklisting] = useState(false)
+  const [blacklistingIban, setBlacklistingIban] = useState<string | null>(null)
 
   const [transactionFilters, setTransactionFilters] = useState({
     search: '',
@@ -279,6 +281,93 @@ export default function AnalyticsPage() {
     }
   }
 
+  async function batchBlacklistChargebacks() {
+    if (isBlacklisting) return
+
+    const confirmed = confirm(
+      'This will automatically blacklist all IBANs associated with AC01 (Invalid Account) and AC04 (Account Closed) chargebacks. Continue?'
+    )
+
+    if (!confirmed) return
+
+    setIsBlacklisting(true)
+    try {
+      toast.info('Processing batch blacklist...')
+      const res = await fetch('/api/blacklist/batch-from-chargebacks', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) throw new Error(data.error || 'Batch blacklist failed')
+
+      toast.success(
+        `Batch blacklist complete: ${data.added} added, ${data.skipped} already blacklisted, ${data.processed} total processed`
+      )
+
+      // Reload stats to reflect changes
+      loadStats()
+    } catch (e: any) {
+      console.error('Batch blacklist error:', e)
+      toast.error(e?.message || 'Batch blacklist failed')
+    } finally {
+      setIsBlacklisting(false)
+    }
+  }
+
+  async function manualBlacklistIban(chargeback: Chargeback) {
+    if (blacklistingIban) return
+
+    // Get IBAN from the chargeback (it might be stored in cardNumber field for SEPA)
+    const iban = chargeback.cardNumber
+
+    if (!iban) {
+      toast.error('No IBAN found for this chargeback')
+      return
+    }
+
+    const confirmed = confirm(
+      `Blacklist IBAN ${maskIbanDisplay(iban)} for reason: ${chargeback.reasonCode}?`
+    )
+
+    if (!confirmed) return
+
+    setBlacklistingIban(iban)
+    try {
+      const res = await fetch('/api/blacklist/add', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          iban,
+          chargebackCode: chargeback.reasonCode,
+          reason: `Manual blacklist: ${chargeback.reasonCode} - ${chargeback.reasonDescription}`
+        })
+      })
+
+      const data = await res.json()
+
+      if (res.status === 409) {
+        toast.info('IBAN is already blacklisted')
+      } else if (!res.ok) {
+        throw new Error(data.error || 'Failed to blacklist IBAN')
+      } else {
+        toast.success(`IBAN ${data.iban} successfully blacklisted`)
+      }
+    } catch (e: any) {
+      console.error('Manual blacklist error:', e)
+      toast.error(e?.message || 'Failed to blacklist IBAN')
+    } finally {
+      setBlacklistingIban(null)
+    }
+  }
+
+  function maskIbanDisplay(iban: string): string {
+    if (!iban || iban.length < 8) return iban
+    const normalized = iban.replace(/\s/g, '')
+    return normalized.substring(0, 4) + '****' + normalized.substring(normalized.length - 4)
+  }
+
   // Filter chargebacks based on search and filters (Client-side for now as list is usually small)
   const filteredChargebacks = useMemo(() => {
     let filtered = chargebacks
@@ -386,6 +475,15 @@ export default function AnalyticsPage() {
               CB Extraction
             </Button>
           </Link>
+          <Button
+            onClick={batchBlacklistChargebacks}
+            disabled={isBlacklisting || isLoadingStats}
+            variant="destructive"
+            className="gap-2"
+          >
+            <ShieldAlert className={`h-4 w-4 ${isBlacklisting ? 'animate-pulse' : ''}`} />
+            {isBlacklisting ? 'Blacklisting…' : 'Batch Blacklist'}
+          </Button>
           <Button onClick={refreshAllData} disabled={isLoadingStats || isRefreshing} className="gap-2" variant="outline">
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             {isRefreshing ? 'Refreshing…' : 'Refresh Data'}
@@ -1037,27 +1135,59 @@ export default function AnalyticsPage() {
                         <th className="py-3 px-4 text-left text-sm font-medium">Amount</th>
                         <th className="py-3 px-4 text-left text-sm font-medium">Reason</th>
                         <th className="py-3 px-4 text-left text-sm font-medium">Description</th>
+                        <th className="py-3 px-4 text-left text-sm font-medium">IBAN</th>
+                        <th className="py-3 px-4 text-center text-sm font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedChargebacks.map((cb, idx) => (
-                        <tr key={idx} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                          <td className="py-3 px-4 text-sm whitespace-nowrap">{cb.postDate}</td>
-                          <td className="py-3 px-4 text-sm font-mono text-xs whitespace-nowrap">{cb.arn || cb.uniqueId}</td>
-                          <td className="py-3 px-4 text-sm">
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                              {cb.type}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-sm font-medium text-destructive">
-                            {formatCurrency(cb.amount, cb.currency)}
-                          </td>
-                          <td className="py-3 px-4 text-sm font-mono">{cb.reasonCode}</td>
-                          <td className="py-3 px-4 text-sm text-muted-foreground max-w-xs truncate" title={cb.reasonDescription}>
-                            {cb.reasonDescription}
-                          </td>
-                        </tr>
-                      ))}
+                      {paginatedChargebacks.map((cb, idx) => {
+                        const ibanToBlacklist = cb.cardNumber
+                        const isBlacklistTrigger = ['AC01', 'AC04'].includes(cb.reasonCode?.toUpperCase())
+                        const isProcessing = blacklistingIban === ibanToBlacklist
+
+                        return (
+                          <tr key={idx} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-4 text-sm whitespace-nowrap">{cb.postDate}</td>
+                            <td className="py-3 px-4 text-sm font-mono text-xs whitespace-nowrap">{cb.arn || cb.uniqueId}</td>
+                            <td className="py-3 px-4 text-sm">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                {cb.type}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-sm font-medium text-destructive">
+                              {formatCurrency(cb.amount, cb.currency)}
+                            </td>
+                            <td className="py-3 px-4 text-sm">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono">{cb.reasonCode}</span>
+                                {isBlacklistTrigger && (
+                                  <ShieldAlert className="h-3.5 w-3.5 text-red-600" title="Triggers blacklist" />
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-sm text-muted-foreground max-w-xs truncate" title={cb.reasonDescription}>
+                              {cb.reasonDescription}
+                            </td>
+                            <td className="py-3 px-4 text-sm font-mono text-xs">
+                              {ibanToBlacklist ? maskIbanDisplay(ibanToBlacklist) : '-'}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              {ibanToBlacklist && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => manualBlacklistIban(cb)}
+                                  disabled={isProcessing}
+                                  title="Blacklist this IBAN"
+                                >
+                                  <ShieldAlert className={`h-4 w-4 ${isProcessing ? 'animate-pulse' : ''} ${isBlacklistTrigger ? 'text-red-600' : 'text-gray-500'}`} />
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>

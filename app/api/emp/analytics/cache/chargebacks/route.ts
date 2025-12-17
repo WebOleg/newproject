@@ -4,6 +4,10 @@ import { fetchChargebacksByDateRange } from '@/app/api/emp/analytics/chargebacks
 import { fetchReconcileTransactions } from '@/app/api/emp/analytics/transactions/route'
 import { requireSession, requireWriteAccess } from '@/lib/auth'
 import { buildChargebackFilter, requiresOrganizationFilter } from '@/lib/analytics-helpers'
+import { addToBlacklist } from '@/lib/blacklist'
+
+// Codes that trigger automatic blacklisting
+const BLACKLIST_TRIGGER_CODES = ['AC01', 'AC04']
 
 // GET: read cached chargebacks for a date range
 export async function GET(request: NextRequest) {
@@ -112,12 +116,56 @@ export async function POST(request: NextRequest) {
     console.log(`[Chargeback Cache] Database now has ${afterCount} chargebacks`)
     console.log(`[Chargeback Cache] Net change: ${afterCount - beforeCount}`)
 
+    // Auto-blacklist IBANs for AC01/AC04 chargebacks
+    let blacklistResults = { processed: 0, added: 0, skipped: 0 }
+    try {
+      const txColl = db.collection('emp_reconcile_transactions')
+      const blacklistChargebacks = items.filter(cb =>
+        BLACKLIST_TRIGGER_CODES.includes(cb.reasonCode?.toUpperCase())
+      )
+
+      console.log(`[Chargeback Cache] Auto-blacklisting ${blacklistChargebacks.length} IBANs with codes: ${BLACKLIST_TRIGGER_CODES.join(', ')}`)
+
+      for (const cb of blacklistChargebacks) {
+        blacklistResults.processed++
+
+        // Find original transaction to get IBAN
+        const originalTx = await txColl.findOne({ uniqueId: cb.originalTransactionUniqueId })
+
+        if (originalTx?.bankAccountNumber) {
+          try {
+            const added = await addToBlacklist({
+              iban: originalTx.bankAccountNumber,
+              ibanMasked: maskIban(originalTx.bankAccountNumber),
+              name: originalTx.customerName || undefined,
+              email: originalTx.customerEmail || undefined,
+              reason: `Auto-blacklist: Chargeback ${cb.reasonCode}`,
+              createdAt: new Date(),
+              createdBy: 'system-auto'
+            })
+
+            if (added) {
+              blacklistResults.added++
+              console.log(`[Chargeback Cache] Blacklisted IBAN: ${maskIban(originalTx.bankAccountNumber)} (${cb.reasonCode})`)
+            } else {
+              blacklistResults.skipped++
+            }
+          } catch (err: any) {
+            console.error(`[Chargeback Cache] Failed to blacklist IBAN:`, err.message)
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('[Chargeback Cache] Auto-blacklist error:', err)
+    }
+
     return NextResponse.json({
       success: true,
       fetched: items.length,
       beforeCount,
       afterCount,
       cleared: clearCache,
+      autoBlacklist: blacklistResults
     })
   } catch (error: any) {
     console.error('[Chargeback Cache] Error:', error)
@@ -125,4 +173,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
+function maskIban(iban: string): string {
+  if (!iban || iban.length < 8) return iban
+  const normalized = iban.replace(/\s/g, '')
+  return normalized.substring(0, 4) + '****' + normalized.substring(normalized.length - 4)
+}
 
