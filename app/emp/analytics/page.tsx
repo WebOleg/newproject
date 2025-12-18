@@ -291,7 +291,7 @@ export default function AnalyticsPage() {
     if (isBlacklisting) return
 
     const confirmed = confirm(
-      'This will automatically blacklist all IBANs associated with AC01 (Invalid Account) and AC04 (Account Closed) chargebacks. Continue?'
+      'This will automatically blacklist all IBANs associated with AC01 (Invalid Account), AC04 (Account Closed), and AC06 (Account Blocked) chargebacks. Continue?'
     )
 
     if (!confirmed) return
@@ -926,7 +926,7 @@ export default function AnalyticsPage() {
                 <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded" style={{ backgroundColor: '#dc2626' }}></div>
-                    <span>Immediate Blacklist (AC01, AC04)</span>
+                    <span>Immediate Blacklist (AC01, AC04, AC06)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ff4444' }}></div>
@@ -1271,7 +1271,7 @@ export default function AnalyticsPage() {
                     <tbody>
                       {paginatedChargebacks.map((cb, idx) => {
                         const ibanToBlacklist = cb.cardNumber
-                        const isBlacklistTrigger = ['AC01', 'AC04'].includes(cb.reasonCode?.toUpperCase())
+                        const isBlacklistTrigger = ['AC01', 'AC04', 'AC06'].includes(cb.reasonCode?.toUpperCase())
                         const isProcessing = blacklistingIban === ibanToBlacklist
 
                         return (

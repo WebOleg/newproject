@@ -21,7 +21,7 @@ const REASON_CODE_DESCRIPTIONS: Record<string, string> = {
 }
 
 // Codes that trigger immediate IBAN blacklisting
-const BLACKLIST_TRIGGER_CODES = ['AC01', 'AC04']
+const BLACKLIST_TRIGGER_CODES = ['AC01', 'AC04', 'AC06']
 
 function getReasonDescription(code: string): string {
   const upperCode = code?.trim().toUpperCase()

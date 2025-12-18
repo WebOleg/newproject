@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getMongoClient, getDbName } from '@/lib/db'
 import { fetchChargebacksByDateRange } from '@/app/api/emp/analytics/chargebacks/route'
-import { fetchReconcileTransactions } from '@/app/api/emp/analytics/transactions/route'
 import { requireSession, requireWriteAccess } from '@/lib/auth'
 import { buildChargebackFilter, requiresOrganizationFilter } from '@/lib/analytics-helpers'
 import { addToBlacklist } from '@/lib/blacklist'
 
 // Codes that trigger automatic blacklisting
-const BLACKLIST_TRIGGER_CODES = ['AC01', 'AC04']
+const BLACKLIST_TRIGGER_CODES = ['AC01', 'AC04', 'AC06']
 
 // GET: read cached chargebacks for a date range
 export async function GET(request: NextRequest) {
@@ -97,16 +96,42 @@ export async function POST(request: NextRequest) {
         postDate: cb.postDate,
       })))
 
-      const docs = items.map(cb => {
+      // Enrich chargebacks with IBAN data from original transactions
+      const txColl = db.collection('emp_reconcile_transactions')
+      console.log(`[Chargeback Cache] Enriching ${items.length} chargebacks with IBAN data...`)
+
+      const docs = await Promise.all(items.map(async (cb) => {
         const postDateObj = cb.postDate ? new Date(`${cb.postDate}T00:00:00Z`) : null
+
+        // Try to find original transaction to get IBAN
+        let enrichedData: any = {}
+        if (cb.originalTransactionUniqueId) {
+          try {
+            const originalTx = await txColl.findOne({ uniqueId: cb.originalTransactionUniqueId })
+            if (originalTx?.bankAccountNumber) {
+              enrichedData = {
+                cardNumber: originalTx.bankAccountNumber, // Store IBAN in cardNumber field for UI compatibility
+                customerName: originalTx.customerName,
+                customerEmail: originalTx.customerEmail,
+              }
+            }
+          } catch (err: any) {
+            console.error(`[Chargeback Cache] Failed to enrich chargeback ${cb.uniqueId}:`, err.message)
+          }
+        }
+
         return {
           ...cb,
+          ...enrichedData, // Override with enriched data if found
           postDateObj,
           cachedAt: new Date(),
           rangeStart: startDate,
           rangeEnd: endDate,
         }
-      })
+      }))
+
+      const enrichedCount = docs.filter(d => d.cardNumber).length
+      console.log(`[Chargeback Cache] Enriched ${enrichedCount}/${docs.length} chargebacks with IBAN data`)
 
       await coll.insertMany(docs, { ordered: false })
     }

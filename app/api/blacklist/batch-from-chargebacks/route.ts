@@ -7,11 +7,11 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // Codes that trigger automatic blacklisting
-const BLACKLIST_TRIGGER_CODES = ['AC01', 'AC04']
+const BLACKLIST_TRIGGER_CODES = ['AC01', 'AC04', 'AC06']
 
 /**
  * POST /api/blacklist/batch-from-chargebacks
- * Batch process all AC01/AC04 chargebacks and blacklist their IBANs
+ * Batch process all AC01/AC04/AC06 chargebacks and blacklist their IBANs
  */
 export async function POST(request: NextRequest) {
   try {
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       },
       {
         $match: {
-          iban: { $ne: null, $ne: '' }
+          iban: { $nin: [null, ''] }
         }
       }
     ]).toArray()
@@ -137,7 +137,8 @@ function maskIban(iban: string): string {
 function getReasonDescription(code: string): string {
   const descriptions: Record<string, string> = {
     'AC01': 'Invalid/Incorrect Account Identifier',
-    'AC04': 'Account Closed'
+    'AC04': 'Account Closed',
+    'AC06': 'Account Blocked'
   }
   return descriptions[code] || code
 }
