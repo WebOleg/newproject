@@ -489,10 +489,12 @@ export async function GET(request: NextRequest) {
         const chargebacksByReason = (cbData.byReason || []).map((i: any) => {
             const code = i._id || 'UNK'
             const description = getReasonDescription(code)
+            const percentage = totalChargebacks > 0 ? ((i.count / totalChargebacks) * 100).toFixed(1) : '0.0'
             return {
                 code,
                 name: `${code} - ${description}`,
                 value: i.count,
+                percentage: percentage + '%',
                 description: i.description || description,
                 blacklistTrigger: triggersBlacklist(code)
             }

@@ -900,6 +900,7 @@ export default function AnalyticsPage() {
                               </div>
                               <div className="text-muted-foreground max-w-[280px] mb-2">{d.description || 'No description'}</div>
                               <div className="font-medium">Count: {d.value}</div>
+                              <div className="font-medium text-primary">Percentage: {d.percentage}</div>
                               {d.blacklistTrigger && (
                                 <div className="mt-2 pt-2 border-t text-xs text-red-600 dark:text-red-400">
                                   ⚠️ Triggers immediate IBAN blacklisting
