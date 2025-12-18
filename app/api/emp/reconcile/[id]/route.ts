@@ -57,11 +57,29 @@ export async function POST(
 
     // Update individual row statuses and error messages from EMP
     const rowUpdates: any = {}
-    report.details.forEach((detail, idx) => {
+    report.details.forEach((detail) => {
+      const rowIndex = detail.csvRowIndex
+
+      // Update empStatus and empError
       if (detail.empStatus || detail.message) {
-        rowUpdates[`rows.${detail.csvRowIndex}.empError`] = detail.message
-        rowUpdates[`rows.${detail.csvRowIndex}.empStatus`] = detail.empStatus
+        rowUpdates[`rows.${rowIndex}.empError`] = detail.message
+        rowUpdates[`rows.${rowIndex}.empStatus`] = detail.empStatus
       }
+
+      // CRITICAL FIX: Update the status field based on empStatus to fix green highlighting
+      if (detail.status === 'approved') {
+        rowUpdates[`rows.${rowIndex}.status`] = 'approved'
+      } else if (detail.status === 'error') {
+        rowUpdates[`rows.${rowIndex}.status`] = 'error'
+      } else if (detail.status === 'pending') {
+        rowUpdates[`rows.${rowIndex}.status`] = 'pending'
+      } else if (detail.status === 'missing_in_emp') {
+        rowUpdates[`rows.${rowIndex}.status`] = 'error'
+        if (!detail.message) {
+          rowUpdates[`rows.${rowIndex}.empError`] = 'Transaction not found in payment gateway'
+        }
+      }
+      // Note: 'not_submitted' rows keep their existing status (usually 'pending')
     })
 
     if (Object.keys(rowUpdates).length > 0) {
