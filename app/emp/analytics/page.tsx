@@ -918,7 +918,7 @@ export default function AnalyticsPage() {
                       name="Count"
                       shape={(props: any) => {
                         const { fill, x, y, width, height, payload } = props
-                        const barFill = payload.blacklistTrigger ? '#dc2626' : '#ff4444'
+                        const barFill = payload.blacklistTrigger ? '#dc2626' : '#f472b6'
                         return <rect x={x} y={y} width={width} height={height} fill={barFill} />
                       }}
                     />
@@ -930,7 +930,7 @@ export default function AnalyticsPage() {
                     <span>Immediate Blacklist (AC01, AC04, AC06)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ff4444' }}></div>
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f472b6' }}></div>
                     <span>Standard Chargeback</span>
                   </div>
                 </div>
