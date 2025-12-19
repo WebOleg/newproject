@@ -9,6 +9,7 @@ import { submitSddSale, maskIban, type SddSaleResponse } from '@/lib/emerchantpa
 import { reconcileTransaction } from '@/lib/emerchantpay-reconcile'
 import { requireWriteAccess } from '@/lib/auth'
 import { check30DayThreshold, extractIbansFromRecords } from '@/lib/emp-threshold'
+import { getFieldValue } from '@/lib/field-aliases'
 
 export const runtime = 'nodejs'
 
@@ -34,12 +35,24 @@ function isDuplicateTransactionError(res?: SddSaleResponse | null, err?: any): b
 
 /**
  * POST /api/emp/submit-batch/[id]
- * Bulk submission - processes ALL records in one go
- * - High concurrency (20 parallel requests)
+ * Bulk submission - processes records with configurable parameters
+ * - Configurable concurrency (1-50 parallel requests, default 20)
+ * - Configurable chunk size (1-100, default 20)
+ * - Optional maxRecords limit to sync only subset
+ * - Optional amount filtering to sync specific amount values
  * - Progress tracking via periodic DB updates
  * - 800s timeout limit
  * - Skips blacklisted records
  * Only Super Owner can submit to gateway
+ *
+ * Request body (optional):
+ * {
+ *   concurrency?: number,      // 1-50, default 20
+ *   chunkSize?: number,        // 1-100, default 20
+ *   maxRecords?: number,       // limit processing, default all (ignored if filterByAmount is set)
+ *   filterByAmount?: string,   // filter to specific amount (e.g., "1.99")
+ *   amountLimit?: number       // limit records with filtered amount (requires filterByAmount)
+ * }
  */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const startTime = Date.now()
@@ -48,6 +61,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     await requireWriteAccess()
 
     const { id } = await ctx.params
+
+    // Parse request body for configuration options
+    const body = await req.json().catch(() => ({}))
+    const configConcurrency = body.concurrency ? Math.min(50, Math.max(1, parseInt(body.concurrency))) : 20
+    const configChunkSize = body.chunkSize ? Math.min(100, Math.max(1, parseInt(body.chunkSize))) : 20
+    const configMaxRecords = body.maxRecords ? Math.max(1, parseInt(body.maxRecords)) : null
+    const configFilterByAmount = body.filterByAmount || null
+    const configAmountLimit = body.amountLimit ? Math.max(1, parseInt(body.amountLimit)) : null
 
     const client = await getMongoClient()
     const db = client.db(getDbName())
@@ -122,9 +143,31 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     }
 
     // Get all rows that need processing (skip approved, blacklisted, and error)
-    const rowsToProcess = records
+    let rowsToProcess = records
       .map((_, i) => i)
       .filter(i => rows[i]?.status !== 'approved' && rows[i]?.status !== 'blacklisted' && rows[i]?.status !== 'error')
+
+    // Filter by amount if specified
+    if (configFilterByAmount) {
+      const beforeFilterCount = rowsToProcess.length
+      rowsToProcess = rowsToProcess.filter(i => {
+        const amount = getFieldValue(records[i], 'amount')
+        return amount === configFilterByAmount
+      })
+      console.log(`[Bulk] Filtered by amount ${configFilterByAmount}: ${rowsToProcess.length} records (from ${beforeFilterCount})`)
+
+      // Limit to amountLimit if specified
+      if (configAmountLimit && rowsToProcess.length > configAmountLimit) {
+        rowsToProcess = rowsToProcess.slice(0, configAmountLimit)
+        console.log(`[Bulk] Limited to ${configAmountLimit} records with amount ${configFilterByAmount}`)
+      }
+    } else {
+      // Limit to maxRecords if specified (only when not filtering by amount)
+      if (configMaxRecords && rowsToProcess.length > configMaxRecords) {
+        rowsToProcess = rowsToProcess.slice(0, configMaxRecords)
+        console.log(`[Bulk] Limited processing to ${configMaxRecords} records`)
+      }
+    }
 
     if (rowsToProcess.length === 0) {
       const approvedCount = rows.filter((r: any) => r.status === 'approved').length
@@ -143,10 +186,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       })
     }
 
-    console.log(`[Bulk] Starting bulk submission: ${rowsToProcess.length} records to process`)
+    console.log(`[Bulk] Starting bulk submission: ${rowsToProcess.length} records to process (concurrency: ${configConcurrency}, chunk size: ${configChunkSize})`)
 
-    // High concurrency bulk processing (20 parallel requests)
-    const CONCURRENCY = 20
+    // Configurable concurrency bulk processing
+    const CONCURRENCY = configConcurrency
     const errors: Array<{ rowIndex: number; message: string }> = []
     let processed = 0
     let lastDbUpdate = Date.now()
