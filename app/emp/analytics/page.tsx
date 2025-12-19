@@ -84,6 +84,8 @@ interface StatsData {
   chargebacksByBank: any[]
   transactionsByBank: any[]
   transactionsByAmount: any[]
+  md01TransactionsByBank: any[]
+  nonMd01TransactionsByBank: any[]
   rawReconcileCount: number
 }
 
@@ -104,6 +106,8 @@ const DEFAULT_STATS: StatsData = {
   chargebacksByBank: [],
   transactionsByBank: [],
   transactionsByAmount: [],
+  md01TransactionsByBank: [],
+  nonMd01TransactionsByBank: [],
   rawReconcileCount: 0
 }
 

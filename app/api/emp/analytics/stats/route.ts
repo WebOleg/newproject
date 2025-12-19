@@ -403,6 +403,128 @@ export async function GET(request: NextRequest) {
                         },
                         { $sort: { count: -1 } },
                         { $limit: 20 }
+                    ],
+                    md01ByBank: [
+                        {
+                            $match: {
+                                reasonCode: { $regex: /^MD01$/i }
+                            }
+                        },
+                        {
+                            $addFields: {
+                                // Extract country code (first 2 chars)
+                                countryCode: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$iban', null] },
+                                            { $ne: ['$iban', ''] },
+                                            { $gte: [{ $strLenCP: '$iban' }, 2] }
+                                        ]},
+                                        then: { $toUpper: { $substrCP: ['$iban', 0, 2] } },
+                                        else: 'XX'
+                                    }
+                                },
+                                // Extract bank code from IBAN (characters 4-7 for most IBANs)
+                                bankCode: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$iban', null] },
+                                            { $ne: ['$iban', ''] },
+                                            { $gte: [{ $strLenCP: '$iban' }, 8] }
+                                        ]},
+                                        then: { $substrCP: ['$iban', 4, 4] },
+                                        else: 'Unknown'
+                                    }
+                                },
+                                // Combine country code and bank code
+                                bankWithCountry: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$iban', null] },
+                                            { $ne: ['$iban', ''] },
+                                            { $gte: [{ $strLenCP: '$iban' }, 8] }
+                                        ]},
+                                        then: {
+                                            $concat: [
+                                                { $toUpper: { $substrCP: ['$iban', 0, 2] } },
+                                                '-',
+                                                { $substrCP: ['$iban', 4, 4] }
+                                            ]
+                                        },
+                                        else: 'Unknown'
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: '$bankWithCountry',
+                                count: { $sum: 1 }
+                            }
+                        },
+                        { $sort: { count: -1 } },
+                        { $limit: 10 }
+                    ],
+                    nonMd01ByBank: [
+                        {
+                            $match: {
+                                reasonCode: { $not: { $regex: /^MD01$/i } }
+                            }
+                        },
+                        {
+                            $addFields: {
+                                // Extract country code (first 2 chars)
+                                countryCode: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$iban', null] },
+                                            { $ne: ['$iban', ''] },
+                                            { $gte: [{ $strLenCP: '$iban' }, 2] }
+                                        ]},
+                                        then: { $toUpper: { $substrCP: ['$iban', 0, 2] } },
+                                        else: 'XX'
+                                    }
+                                },
+                                // Extract bank code from IBAN (characters 4-7 for most IBANs)
+                                bankCode: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$iban', null] },
+                                            { $ne: ['$iban', ''] },
+                                            { $gte: [{ $strLenCP: '$iban' }, 8] }
+                                        ]},
+                                        then: { $substrCP: ['$iban', 4, 4] },
+                                        else: 'Unknown'
+                                    }
+                                },
+                                // Combine country code and bank code
+                                bankWithCountry: {
+                                    $cond: {
+                                        if: { $and: [
+                                            { $ne: ['$iban', null] },
+                                            { $ne: ['$iban', ''] },
+                                            { $gte: [{ $strLenCP: '$iban' }, 8] }
+                                        ]},
+                                        then: {
+                                            $concat: [
+                                                { $toUpper: { $substrCP: ['$iban', 0, 2] } },
+                                                '-',
+                                                { $substrCP: ['$iban', 4, 4] }
+                                            ]
+                                        },
+                                        else: 'Unknown'
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: '$bankWithCountry',
+                                count: { $sum: 1 }
+                            }
+                        },
+                        { $sort: { count: -1 } },
+                        { $limit: 10 }
                     ]
                 }
             }
@@ -631,6 +753,58 @@ export async function GET(request: NextRequest) {
             .sort((a, b) => b.total - a.total)
             .slice(0, 20)
 
+        // Merge approved and MD01 chargebacks by bank
+        const md01ByBankMap = new Map(
+            (cbData.md01ByBank || []).map((item: any) => [item._id, item.count])
+        )
+
+        const allBanksMD01 = new Set([...approvedByBankMap.keys(), ...md01ByBankMap.keys()])
+
+        const md01TransactionsByBank = Array.from(allBanksMD01)
+            .map(bank => {
+                const approved = Number(approvedByBankMap.get(bank) || 0)
+                const md01Chargebacks = Number(md01ByBankMap.get(bank) || 0)
+                const total = approved + md01Chargebacks
+                const md01RateNum = total > 0 ? (md01Chargebacks / total) * 100 : 0
+
+                return {
+                    bank: bank || 'Unknown',
+                    total: total,
+                    approved: approved,
+                    md01Chargebacks: md01Chargebacks,
+                    md01Rate: md01RateNum.toFixed(2) + '%'
+                }
+            })
+            .filter(item => item.total > 0)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10)
+
+        // Merge approved and non-MD01 chargebacks by bank
+        const nonMd01ByBankMap = new Map(
+            (cbData.nonMd01ByBank || []).map((item: any) => [item._id, item.count])
+        )
+
+        const allBanksNonMD01 = new Set([...approvedByBankMap.keys(), ...nonMd01ByBankMap.keys()])
+
+        const nonMd01TransactionsByBank = Array.from(allBanksNonMD01)
+            .map(bank => {
+                const approved = Number(approvedByBankMap.get(bank) || 0)
+                const nonMd01Chargebacks = Number(nonMd01ByBankMap.get(bank) || 0)
+                const total = approved + nonMd01Chargebacks
+                const nonMd01RateNum = total > 0 ? (nonMd01Chargebacks / total) * 100 : 0
+
+                return {
+                    bank: bank || 'Unknown',
+                    total: total,
+                    approved: approved,
+                    nonMd01Chargebacks: nonMd01Chargebacks,
+                    nonMd01Rate: nonMd01RateNum.toFixed(2) + '%'
+                }
+            })
+            .filter(item => item.total > 0)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10)
+
         const stats = {
             totalTransactions: approvedCount,
             baseTransactionsCount: baseCount,
@@ -648,6 +822,8 @@ export async function GET(request: NextRequest) {
             chargebacksByBank,
             transactionsByBank,
             transactionsByAmount,
+            md01TransactionsByBank,
+            nonMd01TransactionsByBank,
             rawReconcileCount: rawCount
         }
 

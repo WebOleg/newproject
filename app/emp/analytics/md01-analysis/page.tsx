@@ -64,7 +64,9 @@ export default function MD01AnalysisPage() {
     try {
       const res = await fetch(`/api/emp/analytics/md01-by-bank`)
       const result = await res.json()
+
       if (!res.ok) throw new Error(result.error || 'Failed to fetch MD01 analysis')
+
       setData(result)
     } catch (error: any) {
       console.error('MD01 analysis error:', error)
@@ -92,7 +94,7 @@ export default function MD01AnalysisPage() {
     )
   }
 
-  if (!data) {
+  if (!data || !data.summary || !data.bankAnalysis) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <p className="text-muted-foreground">No data available</p>
@@ -355,13 +357,13 @@ export default function MD01AnalysisPage() {
                 </Pie>
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload as BankAnalysisItem
-                      const percentage = (data.md01Count / data.summary.totalMd01) * 100
+                    if (active && payload && payload.length && data) {
+                      const item = payload[0].payload as BankAnalysisItem
+                      const percentage = (item.md01Count / data.summary.totalMd01) * 100
                       return (
                         <div className="rounded-md border bg-background p-3 text-sm shadow-lg">
-                          <div className="font-semibold mb-1">{data.bank}</div>
-                          <div className="text-destructive font-medium">MD01: {data.md01Count}</div>
+                          <div className="font-semibold mb-1">{item.bank}</div>
+                          <div className="text-destructive font-medium">MD01: {item.md01Count}</div>
                           <div className="text-muted-foreground text-xs">
                             {percentage.toFixed(1)}% of all MD01s
                           </div>
@@ -402,13 +404,13 @@ export default function MD01AnalysisPage() {
                 </Pie>
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload as BankAnalysisItem
-                      const percentage = (data.approvedCount / data.summary.totalApproved) * 100
+                    if (active && payload && payload.length && data) {
+                      const item = payload[0].payload as BankAnalysisItem
+                      const percentage = (item.approvedCount / data.summary.totalApproved) * 100
                       return (
                         <div className="rounded-md border bg-background p-3 text-sm shadow-lg">
-                          <div className="font-semibold mb-1">{data.bank}</div>
-                          <div className="text-green-600 font-medium">Approved: {data.approvedCount}</div>
+                          <div className="font-semibold mb-1">{item.bank}</div>
+                          <div className="text-green-600 font-medium">Approved: {item.approvedCount}</div>
                           <div className="text-muted-foreground text-xs">
                             {percentage.toFixed(1)}% of all approved
                           </div>
