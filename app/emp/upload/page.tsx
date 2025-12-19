@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { Upload, Search, FileEdit, Trash2, Eye, CheckCircle, HelpCircle, Loader2, Building2, Users, FolderOpen } from 'lucide-react'
+import { Upload, Search, FileEdit, Trash2, Eye, CheckCircle, HelpCircle, Loader2, Building2, Users, FolderOpen, RefreshCw } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog'
 import { ResponsiveTable } from '@/components/emp/responsive-table'
 import { useAsyncAction } from '@/hooks/use-async-action'
@@ -196,6 +196,24 @@ export default function EmpUploadPage() {
             onSuccess: (data) => {
                 const report = data.report
                 toast.success(`Status updated: ${report.approved} approved, ${report.error} errors`)
+                fetchUploads()
+            },
+        }
+    )
+
+    const reconcileRecentAction = useAsyncAction(
+        async () => {
+            const res = await fetch('/api/emp/reconcile-recent', { method: 'POST' })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data?.error || 'Failed to reconcile recent uploads')
+            return data
+        },
+        {
+            loadingMessage: 'Reconciling uploads from last 24 hours...',
+            onSuccess: (data) => {
+                toast.success(
+                    `✅ Reconciled ${data.reconciledCount} upload(s): ${data.totalApproved} approved, ${data.totalErrors} errors, ${data.totalPending} pending`
+                )
                 fetchUploads()
             },
         }
@@ -452,21 +470,51 @@ export default function EmpUploadPage() {
                                 <CardTitle>Upload History</CardTitle>
                                 <CardDescription>View and manage your uploaded CSV files</CardDescription>
                             </div>
-                            {canAssign && selectedUploadIds.length > 0 && (
-                                <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button variant="outline" size="sm" className="gap-2">
-                                            <FolderOpen className="h-4 w-4" />
-                                            Assign {selectedUploadIds.length} selected
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Assign Uploads to Organization</DialogTitle>
-                                            <DialogDescription>
-                                                Assign {selectedUploadIds.length} selected upload(s) to an agency and/or account.
-                                            </DialogDescription>
-                                        </DialogHeader>
+                            <div className="flex gap-2">
+                                {isSuperOwner && (
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-2"
+                                                onClick={() => {
+                                                    if (!confirm('Reconcile all uploads from the last 24 hours with the payment gateway?')) return
+                                                    reconcileRecentAction.execute()
+                                                }}
+                                                disabled={reconcileRecentAction.isLoading}
+                                            >
+                                                {reconcileRecentAction.isLoading ? (
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                        Reconciling...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <RefreshCw className="h-4 w-4" />
+                                                        <span className="hidden sm:inline">Reconcile Last Day</span>
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Reconcile all uploads from last 24 hours</TooltipContent>
+                                    </Tooltip>
+                                )}
+                                {canAssign && selectedUploadIds.length > 0 && (
+                                    <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="outline" size="sm" className="gap-2">
+                                                <FolderOpen className="h-4 w-4" />
+                                                Assign {selectedUploadIds.length} selected
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Assign Uploads to Organization</DialogTitle>
+                                                <DialogDescription>
+                                                    Assign {selectedUploadIds.length} selected upload(s) to an agency and/or account.
+                                                </DialogDescription>
+                                            </DialogHeader>
                                         <div className="space-y-4 py-4">
                                             {isSuperOwner && (
                                                 <div className="space-y-2">
@@ -524,6 +572,7 @@ export default function EmpUploadPage() {
                                     </DialogContent>
                                 </Dialog>
                             )}
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent>

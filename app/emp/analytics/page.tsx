@@ -481,6 +481,12 @@ export default function AnalyticsPage() {
               CB Extraction
             </Button>
           </Link>
+          <Link href="/emp/analytics/md01-analysis">
+            <Button variant="outline" className="gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              MD01 Analysis
+            </Button>
+          </Link>
           <Button
             onClick={batchBlacklistChargebacks}
             disabled={isBlacklisting || isLoadingStats}
