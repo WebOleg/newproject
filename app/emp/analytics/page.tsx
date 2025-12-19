@@ -210,7 +210,7 @@ export default function AnalyticsPage() {
       const res = await fetch(`/api/emp/analytics/cache/transactions`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({}), // No dates, backend defaults to last 2 years
+        body: JSON.stringify({}), // No dates, backend defaults to last 2 months
       })
 
       // Check content type before parsing as JSON
@@ -243,7 +243,7 @@ export default function AnalyticsPage() {
       const res = await fetch(`/api/emp/analytics/cache/chargebacks`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({}), // No dates, backend defaults to last 2 years
+        body: JSON.stringify({}), // No dates, backend defaults to last 2 months
       })
 
       // Check content type before parsing as JSON

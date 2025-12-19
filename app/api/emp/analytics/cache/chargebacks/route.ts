@@ -58,9 +58,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}))
     const clearCache = body.clear_cache !== false // Default to true
 
-    // Default to last 2 years if not provided
+    // Default to last 2 months if not provided
     const defaultStart = new Date()
-    defaultStart.setFullYear(defaultStart.getFullYear() - 2)
+    defaultStart.setMonth(defaultStart.getMonth() - 2)
     const startDate = body.start_date || defaultStart.toISOString().split('T')[0]
     const endDate = body.end_date || new Date().toISOString().split('T')[0]
 
