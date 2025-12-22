@@ -2,13 +2,17 @@ import { NextResponse } from 'next/server'
 import { ObjectId } from 'mongodb'
 import { getMongoClient, getDbName } from '@/lib/db'
 import { requireWriteAccess } from '@/lib/auth'
+import { checkBlacklist } from '@/lib/blacklist'
+import { getFieldValue } from '@/lib/field-aliases'
 
 export const runtime = 'nodejs'
 
 /**
  * POST /api/emp/uploads/filter-chargebacks/[id]
  * 
- * Removes rows from upload that have IBANs matching chargebacks in cache
+ * Removes rows from upload that have:
+ * 1. IBANs matching chargebacks in cache
+ * 2. IBAN, email, name, or BIC in blacklist
  * Only Super Owner can filter uploads
  */
 export async function POST(_req: Request, ctx: { params: { id: string } }) {
@@ -38,18 +42,11 @@ export async function POST(_req: Request, ctx: { params: { id: string } }) {
 
     console.log(`[Filter Chargebacks] Processing upload ${id} with ${records.length} records`)
 
+    // ============ PART 1: CHARGEBACK FILTERING ============
+    
     // Step 1: Get all chargebacks from cache
     const allChargebacks = await chargebacksCollection.find({}).toArray()
     console.log(`[Filter Chargebacks] Found ${allChargebacks.length} chargebacks in cache`)
-
-    if (allChargebacks.length === 0) {
-      return NextResponse.json({
-        ok: true,
-        message: 'No chargebacks in cache to filter',
-        removedCount: 0,
-        remainingCount: records.length,
-      })
-    }
 
     // Step 2: Get originalTransactionUniqueIds from chargebacks
     const originalTransactionUniqueIds = new Set(
@@ -71,11 +68,9 @@ export async function POST(_req: Request, ctx: { params: { id: string } }) {
     const chargebackAccounts = new Set<string>()
 
     for (const tx of originalTransactions) {
-      // Get bankAccountNumber (this is the IBAN for SEPA transactions)
       const account = tx.bankAccountNumber || tx.bank_account_number || tx.cardNumber || tx.card_number
 
       if (account && typeof account === 'string') {
-        // Normalize (remove spaces, uppercase)
         const normalized = account.replace(/\s+/g, '').toUpperCase()
         if (normalized.length > 0) {
           chargebackAccounts.add(normalized)
@@ -85,98 +80,104 @@ export async function POST(_req: Request, ctx: { params: { id: string } }) {
 
     console.log(`[Filter Chargebacks] Extracted ${chargebackAccounts.size} unique account numbers with chargebacks`)
 
-    // Debug: Show sample accounts
-    if (chargebackAccounts.size > 0) {
-      const sampleAccounts = Array.from(chargebackAccounts).slice(0, 3).map(acc =>
-        acc.length > 8 ? `${acc.substring(0, 4)}****${acc.substring(acc.length - 4)}` : `${acc.substring(0, 2)}****`
-      )
-      console.log(`[Filter Chargebacks] Sample account numbers:`, sampleAccounts)
-    }
+    // ============ PART 2: BLACKLIST FILTERING ============
+    
+    // Extract data for blacklist check
+    const ibans = records
+      .map(r => getFieldValue(r, 'iban'))
+      .filter((iban): iban is string => !!iban)
+      .map(iban => iban.replace(/\s/g, '').toUpperCase())
 
-    if (chargebackAccounts.size === 0) {
-      return NextResponse.json({
-        ok: true,
-        message: 'No account numbers found in chargeback data',
-        removedCount: 0,
-        remainingCount: records.length,
+    const emails = records
+      .map(r => getFieldValue(r, 'email'))
+      .filter((email): email is string => !!email)
+
+    const names = records
+      .map(r => {
+        const name = getFieldValue(r, 'name') || ''
+        const firstName = getFieldValue(r, 'first_name') || getFieldValue(r, 'firstname') || ''
+        const lastName = getFieldValue(r, 'last_name') || getFieldValue(r, 'lastname') || getFieldValue(r, 'surname') || ''
+        return name || `${lastName} ${firstName}`.trim()
       })
+      .filter((name): name is string => !!name)
+
+    const bics = records
+      .map(r => getFieldValue(r, 'bic'))
+      .filter((bic): bic is string => !!bic)
+
+    // Check blacklist
+    let blacklistedIbans = new Set<string>()
+    let blacklistedEmails = new Set<string>()
+    let blacklistedNames = new Set<string>()
+    let blacklistedBics = new Set<string>()
+
+    try {
+      const result = await checkBlacklist(ibans, emails, names, bics)
+      blacklistedIbans = result.blacklistedIbans
+      blacklistedEmails = result.blacklistedEmails
+      blacklistedNames = result.blacklistedNames
+      blacklistedBics = result.blacklistedBics
+      
+      console.log(`[Filter Chargebacks] Blacklist check: ${blacklistedIbans.size} IBANs, ${blacklistedEmails.size} emails, ${blacklistedNames.size} names, ${blacklistedBics.size} BICs`)
+    } catch (blError: any) {
+      console.error('[Filter Chargebacks] Blacklist check error:', blError)
     }
 
-    // Step 5: Find IBAN field in CSV records (case-insensitive)
-    const possibleCsvIbanFields = [
-      'iban', 'Iban', 'IBAN',
-      'customer_iban', 'customeriban', 'CustomerIban',
-      'billing_iban', 'billingiban',
-      'account', 'Account', 'ACCOUNT'
-    ]
-    let ibanFieldName = ''
+    // ============ PART 3: FILTER RECORDS ============
 
-    // Check first record for IBAN field (case-insensitive)
-    if (records.length > 0) {
-      const firstRecord = records[0]
-      const keys = Object.keys(firstRecord)
-
-      console.log(`[Filter Chargebacks] CSV has fields:`, keys)
-
-      // Try to find IBAN field (case-insensitive)
-      for (const field of possibleCsvIbanFields) {
-        const foundKey = keys.find(k => k.toLowerCase() === field.toLowerCase())
-        if (foundKey) {
-          ibanFieldName = foundKey
-          break
-        }
-      }
-
-      // If still not found, look for any field containing 'iban'
-      if (!ibanFieldName) {
-        const ibanKey = keys.find(k => k.toLowerCase().includes('iban'))
-        if (ibanKey) {
-          ibanFieldName = ibanKey
-        }
-      }
-    }
-
-    if (!ibanFieldName) {
-      return NextResponse.json({
-        error: `No IBAN field found in CSV. Available fields: ${Object.keys(records[0] || {}).join(', ')}`
-      }, { status: 400 })
-    }
-
-    console.log(`[Filter Chargebacks] Using IBAN field: ${ibanFieldName}`)
-
-    // Step 6: Filter out rows with matching IBANs
     const remainingRecords: Record<string, string>[] = []
     const remainingRows: any[] = []
     const removedRecords: Record<string, string>[] = []
-    let removedCount = 0
-
-    console.log(`[Filter Chargebacks] Starting to filter ${records.length} records...`)
-
-    // Sample first 3 CSV IBANs for debugging
-    if (records.length > 0) {
-      const sampleCsvIbans = records.slice(0, 3).map(r => {
-        const iban = r[ibanFieldName] || ''
-        const normalized = iban.replace(/\s+/g, '').toUpperCase()
-        return normalized.length > 8 ? `${normalized.substring(0, 4)}****${normalized.substring(normalized.length - 4)}` : normalized
-      })
-      console.log(`[Filter Chargebacks] Sample CSV IBANs:`, sampleCsvIbans)
-    }
+    let removedByChargeback = 0
+    let removedByBlacklist = 0
 
     for (let i = 0; i < records.length; i++) {
       const record = records[i]
-      const iban = record[ibanFieldName] || ''
+      
+      // Get IBAN
+      const iban = getFieldValue(record, 'iban') || ''
       const normalizedIban = iban.replace(/\s+/g, '').toUpperCase()
+      
+      // Get email
+      const email = getFieldValue(record, 'email') || ''
+      const normalizedEmail = email.trim().toLowerCase()
+      
+      // Get name
+      const nameField = getFieldValue(record, 'name') || ''
+      const firstName = getFieldValue(record, 'first_name') || getFieldValue(record, 'firstname') || ''
+      const lastName = getFieldValue(record, 'last_name') || getFieldValue(record, 'lastname') || getFieldValue(record, 'surname') || ''
+      const fullName = nameField || `${lastName} ${firstName}`.trim()
+      const normalizedName = fullName.toUpperCase()
+      
+      // Get BIC
+      const bic = getFieldValue(record, 'bic') || ''
+      const normalizedBic = bic.trim().toUpperCase()
 
-      if (normalizedIban && chargebackAccounts.has(normalizedIban)) {
-        // This IBAN has chargebacks - remove it
+      // Check chargeback
+      const hasChargeback = normalizedIban && chargebackAccounts.has(normalizedIban)
+      
+      // Check blacklist
+      const ibanBlacklisted = blacklistedIbans.has(normalizedIban)
+      const emailBlacklisted = blacklistedEmails.has(normalizedEmail)
+      const nameBlacklisted = blacklistedNames.has(normalizedName)
+      const bicBlacklisted = blacklistedBics.has(normalizedBic)
+      const isBlacklisted = ibanBlacklisted || emailBlacklisted || nameBlacklisted || bicBlacklisted
+
+      if (hasChargeback || isBlacklisted) {
         removedRecords.push(record)
-        removedCount++
-        if (removedCount <= 5) {
-          // Log first 5 removals
-          console.log(`[Filter Chargebacks] Removing row ${i} with IBAN ${normalizedIban.substring(0, 4)}****`)
+        if (hasChargeback) removedByChargeback++
+        if (isBlacklisted) removedByBlacklist++
+        
+        if (removedRecords.length <= 5) {
+          const reasons = []
+          if (hasChargeback) reasons.push('chargeback')
+          if (ibanBlacklisted) reasons.push('IBAN blacklisted')
+          if (emailBlacklisted) reasons.push('email blacklisted')
+          if (nameBlacklisted) reasons.push('name blacklisted')
+          if (bicBlacklisted) reasons.push('BIC blacklisted')
+          console.log(`[Filter Chargebacks] Removing row ${i}: ${reasons.join(', ')}`)
         }
       } else {
-        // Keep this row
         remainingRecords.push(record)
         if (rows[i]) {
           remainingRows.push(rows[i])
@@ -184,7 +185,8 @@ export async function POST(_req: Request, ctx: { params: { id: string } }) {
       }
     }
 
-    console.log(`[Filter Chargebacks] Removed ${removedCount} rows, ${remainingRecords.length} remaining`)
+    const totalRemoved = removedRecords.length
+    console.log(`[Filter Chargebacks] Removed ${totalRemoved} rows (${removedByChargeback} chargebacks, ${removedByBlacklist} blacklisted), ${remainingRecords.length} remaining`)
 
     // Step 7: Update the upload document
     await uploads.updateOne(
@@ -194,15 +196,22 @@ export async function POST(_req: Request, ctx: { params: { id: string } }) {
           records: remainingRecords,
           rows: remainingRows,
           recordCount: remainingRecords.length,
-          filteredRecords: removedRecords, // Save filtered records
-          filteredRows: removedRecords.map((_, idx) => rows.find(r => r === removedRecords[idx]) || {}), // Best effort to map back to rows if needed, or just save removedRecords if rows structure matches
+          filteredRecords: removedRecords,
           updatedAt: new Date(),
           chargebackFilteredAt: new Date(),
           chargebackFilterStats: {
             originalCount: records.length,
-            removedCount,
+            removedCount: totalRemoved,
+            removedByChargeback,
+            removedByBlacklist,
             remainingCount: remainingRecords.length,
             chargebackAccountsChecked: chargebackAccounts.size,
+            blacklistChecked: {
+              ibans: blacklistedIbans.size,
+              emails: blacklistedEmails.size,
+              names: blacklistedNames.size,
+              bics: blacklistedBics.size,
+            },
           },
         },
       }
@@ -210,8 +219,10 @@ export async function POST(_req: Request, ctx: { params: { id: string } }) {
 
     return NextResponse.json({
       ok: true,
-      message: `Removed ${removedCount} row(s) with chargebacks`,
-      removedCount,
+      message: `Removed ${totalRemoved} row(s) (${removedByChargeback} chargebacks, ${removedByBlacklist} blacklisted)`,
+      removedCount: totalRemoved,
+      removedByChargeback,
+      removedByBlacklist,
       remainingCount: remainingRecords.length,
       originalCount: records.length,
       chargebackAccountsChecked: chargebackAccounts.size,
@@ -223,4 +234,3 @@ export async function POST(_req: Request, ctx: { params: { id: string } }) {
     }, { status: 500 })
   }
 }
-

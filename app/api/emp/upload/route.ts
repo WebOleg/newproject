@@ -6,7 +6,7 @@ import { parseEmpCsv } from '@/lib/emp'
 import { getMongoClient, getDbName } from '@/lib/db'
 import { ObjectId } from 'mongodb'
 import { requireSession } from '@/lib/auth'
-import { getBlacklistedIbans } from '@/lib/blacklist'
+import { checkBlacklist } from '@/lib/blacklist'
 import { getFieldValue } from '@/lib/field-aliases'
 import { normalizeIban } from '@/lib/validation'
 
@@ -131,17 +131,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No valid columns found in CSV' }, { status: 400 })
     }
 
-    // 8. Check blacklist
+    // 8. Check blacklist (IBAN, email, name, BIC)
     const ibans = records
       .map(r => getFieldValue(r, 'iban'))
       .filter((iban): iban is string => !!iban)
       .map(iban => iban.replace(/\s/g, '').toUpperCase())
 
+    const emails = records
+      .map(r => getFieldValue(r, 'email'))
+      .filter((email): email is string => !!email)
+
+    const names = records
+      .map(r => {
+        const name = getFieldValue(r, 'name') || ''
+        const firstName = getFieldValue(r, 'first_name') || getFieldValue(r, 'firstname') || ''
+        const lastName = getFieldValue(r, 'last_name') || getFieldValue(r, 'lastname') || getFieldValue(r, 'surname') || ''
+        return name || `${lastName} ${firstName}`.trim()
+      })
+      .filter((name): name is string => !!name)
+
+    const bics = records
+      .map(r => getFieldValue(r, 'bic'))
+      .filter((bic): bic is string => !!bic)
+
     let blacklistedIbans: Set<string> = new Set()
+    let blacklistedEmails: Set<string> = new Set()
+    let blacklistedNames: Set<string> = new Set()
+    let blacklistedBics: Set<string> = new Set()
+
     try {
-      blacklistedIbans = await getBlacklistedIbans(ibans)
-      if (blacklistedIbans.size > 0) {
-        console.log(`[Upload] Found ${blacklistedIbans.size} blacklisted IBAN(s)`)
+      const result = await checkBlacklist(ibans, emails, names, bics)
+      blacklistedIbans = result.blacklistedIbans
+      blacklistedEmails = result.blacklistedEmails
+      blacklistedNames = result.blacklistedNames
+      blacklistedBics = result.blacklistedBics
+      
+      const totalBlacklisted = blacklistedIbans.size + blacklistedEmails.size + blacklistedNames.size + blacklistedBics.size
+      if (totalBlacklisted > 0) {
+        console.log(`[Upload] Found blacklisted: ${blacklistedIbans.size} IBANs, ${blacklistedEmails.size} emails, ${blacklistedNames.size} names, ${blacklistedBics.size} BICs`)
       }
     } catch (blError: any) {
       console.error('[Upload] Blacklist check error:', blError)
@@ -172,20 +199,45 @@ export async function POST(req: Request) {
       const rows = chunkRecords.map((record, rowIdx) => {
         const iban = getFieldValue(record, 'iban')
         const normalizedIban = iban ? iban.replace(/\s/g, '').toUpperCase() : ''
-        const isBlacklisted = blacklistedIbans.has(normalizedIban)
+        
+        const email = getFieldValue(record, 'email')
+        const normalizedEmail = email ? email.trim().toLowerCase() : ''
+        
+        const nameField = getFieldValue(record, 'name') || ''
+        const firstName = getFieldValue(record, 'first_name') || getFieldValue(record, 'firstname') || ''
+        const lastName = getFieldValue(record, 'last_name') || getFieldValue(record, 'lastname') || getFieldValue(record, 'surname') || ''
+        const fullName = nameField || `${lastName} ${firstName}`.trim()
+        const normalizedName = fullName.toUpperCase()
+        
+        const bic = getFieldValue(record, 'bic')
+        const normalizedBic = bic ? bic.trim().toUpperCase() : ''
+
+        // Check all blacklist types
+        const ibanBlacklisted = blacklistedIbans.has(normalizedIban)
+        const emailBlacklisted = blacklistedEmails.has(normalizedEmail)
+        const nameBlacklisted = blacklistedNames.has(normalizedName)
+        const bicBlacklisted = blacklistedBics.has(normalizedBic)
+        
+        const isBlacklisted = ibanBlacklisted || emailBlacklisted || nameBlacklisted || bicBlacklisted
+
+        // Build blacklist reason
+        const reasons: string[] = []
+        if (ibanBlacklisted) reasons.push('IBAN')
+        if (emailBlacklisted) reasons.push('Email')
+        if (nameBlacklisted) reasons.push('Name')
+        if (bicBlacklisted) reasons.push('BIC')
 
         // Determine status: blacklisted or pending
-        let status = 'pending'
-
-        if (isBlacklisted) {
-          status = 'blacklisted'
-        }
+        const status = isBlacklisted ? 'blacklisted' : 'pending'
 
         return {
           status,
           attempts: 0,
           originalRowNumber: start + rowIdx + 1,
-          ...(isBlacklisted && { blacklistedAt: now, blacklistReason: 'IBAN in blacklist' })
+          ...(isBlacklisted && { 
+            blacklistedAt: now, 
+            blacklistReason: `${reasons.join(', ')} in blacklist` 
+          })
         }
       })
 
