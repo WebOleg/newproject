@@ -42,10 +42,16 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses
   const [amountLimit, setAmountLimit] = useState<number>(0)
   const beforeUnloadRef = useRef<(() => void) | null>(null)
 
-  // Get unique amounts from rows
+  // Get unique amounts from rows (only count pending/non-processed records)
   const availableAmounts = useMemo(() => {
     const amounts = new Map<string, number>()
-    rows.forEach(row => {
+    rows.forEach((row, index) => {
+      // Skip approved, blacklisted, and error records
+      const status = rowStatuses[index]
+      if (status === 'approved' || status === 'blacklisted' || status === 'error') {
+        return
+      }
+
       const amount = getFieldValue(row, 'amount')
       if (amount) {
         amounts.set(amount, (amounts.get(amount) || 0) + 1)
@@ -54,7 +60,7 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses
     return Array.from(amounts.entries())
       .map(([amount, count]) => ({ amount, count }))
       .sort((a, b) => parseFloat(a.amount) - parseFloat(b.amount))
-  }, [rows])
+  }, [rows, rowStatuses])
 
   // Update maxRecords when totalRecords changes
   useEffect(() => {

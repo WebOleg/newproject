@@ -491,6 +491,12 @@ export default function AnalyticsPage() {
               MD01 Analysis
             </Button>
           </Link>
+          <Link href="/emp/analytics/pending-async-analysis">
+            <Button variant="outline" className="gap-2">
+              <Activity className="h-4 w-4" />
+              Pending & CB Calc
+            </Button>
+          </Link>
           <Button
             onClick={batchBlacklistChargebacks}
             disabled={isBlacklisting || isLoadingStats}
