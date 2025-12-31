@@ -27,12 +27,11 @@ export default function AboutPage() {
         <div className="container-custom relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <div className="animate-fade-in">
-              <h1 className="text-4xl md:text-5xl font-bold mb-6 text-balance">About Melinux</h1>
+              <h1 className="text-4xl md:text-5xl font-bold mb-6 text-balance">About Us</h1>
             </div>
             <div className="animate-fade-in animate-delay-200">
               <p className="text-xl text-muted-foreground mb-8 text-pretty">
-                Melinux is a trusted partner in accounting, consulting, and investments. With years of experience, we
-                combine local expertise with international standards.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
               </p>
             </div>
           </div>
@@ -47,14 +46,10 @@ export default function AboutPage() {
               <div>
                 <h2 className="text-3xl font-bold mb-6">Our Story</h2>
                 <p className="text-lg text-muted-foreground mb-6 text-pretty">
-                  Founded with a vision to provide comprehensive business solutions, Melinux has grown to become a
-                  trusted partner for companies across various industries. We understand that every business is unique,
-                  and we tailor our services to meet your specific needs.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
                 </p>
                 <p className="text-lg text-muted-foreground mb-8 text-pretty">
-                  Our team of experienced professionals brings together expertise in accounting, tax planning, human
-                  resources, business consulting, and investment management. We're committed to helping your business
-                  thrive in today's competitive landscape.
+                  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
                 </p>
               </div>
             </ScrollAnimation>
@@ -86,10 +81,10 @@ export default function AboutPage() {
                 <Card className="text-center card-animate hover-lift">
                   <CardHeader>
                     <Users className="h-12 w-12 text-primary mx-auto mb-4 transition-transform-smooth hover:scale-110" />
-                    <CardTitle>Expertise</CardTitle>
+                    <CardTitle>Value One</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription>Deep knowledge and experience across all our service areas</CardDescription>
+                    <CardDescription>Lorem ipsum dolor sit amet consectetur adipiscing elit</CardDescription>
                   </CardContent>
                 </Card>
               </ScrollAnimation>
@@ -98,10 +93,10 @@ export default function AboutPage() {
                 <Card className="text-center card-animate hover-lift">
                   <CardHeader>
                     <Target className="h-12 w-12 text-primary mx-auto mb-4 transition-transform-smooth hover:scale-110" />
-                    <CardTitle>Precision</CardTitle>
+                    <CardTitle>Value Two</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription>Accurate, detailed work that meets the highest standards</CardDescription>
+                    <CardDescription>Sed do eiusmod tempor incididunt ut labore et dolore</CardDescription>
                   </CardContent>
                 </Card>
               </ScrollAnimation>
@@ -110,10 +105,10 @@ export default function AboutPage() {
                 <Card className="text-center card-animate hover-lift">
                   <CardHeader>
                     <Award className="h-12 w-12 text-primary mx-auto mb-4 transition-transform-smooth hover:scale-110" />
-                    <CardTitle>Excellence</CardTitle>
+                    <CardTitle>Value Three</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription>Commitment to delivering exceptional results every time</CardDescription>
+                    <CardDescription>Ut enim ad minim veniam quis nostrud exercitation</CardDescription>
                   </CardContent>
                 </Card>
               </ScrollAnimation>
@@ -122,10 +117,10 @@ export default function AboutPage() {
                 <Card className="text-center card-animate hover-lift">
                   <CardHeader>
                     <Globe className="h-12 w-12 text-primary mx-auto mb-4 transition-transform-smooth hover:scale-110" />
-                    <CardTitle>Innovation</CardTitle>
+                    <CardTitle>Value Four</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription>Modern solutions that keep pace with changing business needs</CardDescription>
+                    <CardDescription>Duis aute irure dolor in reprehenderit in voluptate</CardDescription>
                   </CardContent>
                 </Card>
               </ScrollAnimation>
@@ -143,8 +138,7 @@ export default function AboutPage() {
               <div className="relative z-10">
                 <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
                 <p className="text-xl text-muted-foreground max-w-4xl mx-auto text-pretty">
-                  To empower businesses with smart solutions that drive growth, ensure compliance, and create lasting
-                  value. We're not just service providers – we're your strategic partners in success.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.
                 </p>
               </div>
             </div>
@@ -159,11 +153,11 @@ export default function AboutPage() {
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="text-3xl font-bold mb-6">Ready to Work Together?</h2>
               <p className="text-xl mb-8 text-primary-foreground/90 text-pretty">
-                Discover how Melinux can help your business reach its full potential.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit.
               </p>
               <Button size="lg" variant="secondary" className="btn-animate transition-smooth hover-lift">
                 <Link href="/contact" className="flex flex-row items-center justify-center">
-                  Contact MeLinux
+                  Contact Us
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
