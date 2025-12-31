@@ -61,12 +61,6 @@ export function Navigation() {
                 </div>
               </div>
             </div>
-            <Link href="/contact" className="nav-link text-foreground hover:text-accent transition-colors-smooth">
-              Contact
-            </Link>
-            <Button asChild className="btn-animate transition-smooth hover-lift">
-              <Link href="/contact">Get Started</Link>
-            </Button>
           </div>
 
           {/* Mobile menu button */}
@@ -112,15 +106,6 @@ export function Navigation() {
                 </Link>
               ))}
             </div>
-            <Link
-              href="/contact"
-              className="block text-foreground hover:text-accent transition-colors-smooth hover:translate-x-2 transition-transform-smooth"
-            >
-              Contact
-            </Link>
-            <Button asChild className="w-full btn-animate transition-smooth">
-              <Link href="/contact">Get Started</Link>
-            </Button>
           </div>
         </div>
       </div>

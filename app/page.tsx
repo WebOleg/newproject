@@ -492,13 +492,6 @@ export default function HomePage() {
           <ScrollAnimation animation="fade-in-up">
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="text-3xl md:text-4xl font-bold mb-6 text-balance">YOU NEED PROFESSIONAL SERVICES, ATTITUDE AND CONFIDENTIALITY?</h2>
-
-              <Button size="lg" asChild className="btn-animate transition-smooth hover-lift">
-                <Link href="/contact">
-                  CONTACT US
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
             </div>
           </ScrollAnimation>
         </div>

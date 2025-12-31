@@ -61,14 +61,6 @@ export function Footer() {
                   Terms of Service
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/contact"
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors text-sm"
-                >
-                  Contact
-                </Link>
-              </li>
             </ul>
           </div>
 
