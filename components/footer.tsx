@@ -64,23 +64,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Services */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Services</h3>
-            <ul className="space-y-2">
-              {services.slice(0, 4).map((service) => (
-                <li key={service.href}>
-                  <Link
-                    href={service.href}
-                    className="text-primary-foreground/80 hover:text-primary-foreground transition-colors text-sm"
-                  >
-                    {service.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
           {/* Contact Info */}
           <div className="space-y-4">
             <h3 className="font-semibold text-lg">Contact Info</h3>
