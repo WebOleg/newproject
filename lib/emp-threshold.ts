@@ -1,7 +1,7 @@
 import { Db, ObjectId } from 'mongodb'
 import { getFieldValue } from './field-aliases'
 
-export const DAYS_THRESHOLD = 30
+export const DAYS_THRESHOLD = 7
 
 export type ThresholdViolation = {
   iban: string

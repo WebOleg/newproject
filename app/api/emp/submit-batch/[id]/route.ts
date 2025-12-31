@@ -129,7 +129,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         for (const violation of thresholdResult.violations) {
           rows[violation.rowIndex].status = 'error'
           rows[violation.rowIndex].emp = {
-            message: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait 30 days)`
+            message: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait 7 days)`
           }
           rows[violation.rowIndex].attempts = (rows[violation.rowIndex].attempts || 0) + 1
           rows[violation.rowIndex].lastAttemptAt = new Date()
