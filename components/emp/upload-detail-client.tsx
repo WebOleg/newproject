@@ -148,7 +148,7 @@ export function UploadDetailClient({
       const iban = normalizeIban(getFieldValue(records[index], 'iban'))
       if (iban && recentlyProcessedIbans.has(iban)) {
         const daysAgo = recentlyProcessedIbans.get(iban)
-        return `IBAN processed ${daysAgo} day(s) ago (must wait 7 days)`
+        return `IBAN processed ${daysAgo} day(s) ago (must wait 30 days)`
       }
       
       const validationError = validation.invalidRows.find(inv => inv.index === index)
