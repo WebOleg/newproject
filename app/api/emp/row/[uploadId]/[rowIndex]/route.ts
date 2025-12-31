@@ -86,7 +86,7 @@ export async function POST(_req: Request, ctx: { params: { uploadId: string; row
         const violation = thresholdResult.violations[0]
         rows[rowIndex].status = 'error'
         rows[rowIndex].emp = {
-          message: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait 30 days)`
+          message: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait 7 days)`
         }
         rows[rowIndex].attempts = (rows[rowIndex].attempts || 0) + 1
         rows[rowIndex].lastAttemptAt = new Date()
@@ -95,7 +95,7 @@ export async function POST(_req: Request, ctx: { params: { uploadId: string; row
 
         return NextResponse.json({
           ok: false,
-          error: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait 30 days)`,
+          error: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait 7 days)`,
           row: rows[rowIndex]
         }, { status: 400 })
       }

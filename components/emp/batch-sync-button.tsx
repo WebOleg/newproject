@@ -40,6 +40,7 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses
   const [maxRecords, setMaxRecords] = useState(totalRecords)
   const [filterByAmount, setFilterByAmount] = useState<string>('')
   const [amountLimit, setAmountLimit] = useState<number>(0)
+  const [coolingPeriodDays, setCoolingPeriodDays] = useState<number>(30)
   const beforeUnloadRef = useRef<(() => void) | null>(null)
 
   // Get unique amounts from rows (only count pending/non-processed records)
@@ -174,6 +175,7 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses
           maxRecords: recordsToSync,
           filterByAmount: filterByAmount || undefined,
           amountLimit: amountLimit > 0 ? amountLimit : undefined,
+          coolingPeriodDays,
         }),
       })
       const data = await res.json()
@@ -228,6 +230,23 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="coolingPeriod">
+                Cooling Period
+              </Label>
+              <Select value={String(coolingPeriodDays)} onValueChange={(value) => setCoolingPeriodDays(parseInt(value))} disabled={syncing}>
+                <SelectTrigger id="coolingPeriod">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">7 days (Aggressive)</SelectItem>
+                  <SelectItem value="30">30 days (Default - Recommended)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                IBANs must not have been processed within this period. Default is 30 days (safer).
+              </p>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="filterAmount">
                 Filter by Amount (Optional)
@@ -325,6 +344,7 @@ export function BatchSyncButton({ uploadId, totalRecords, rows = [], rowStatuses
             <div className="p-3 bg-muted/50 rounded-md text-sm space-y-1">
               <p className="font-medium">Summary:</p>
               <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                <li>Cooling period: {coolingPeriodDays} days</li>
                 {filterByAmount ? (
                   <>
                     <li>Filter: Only amount {filterByAmount}</li>

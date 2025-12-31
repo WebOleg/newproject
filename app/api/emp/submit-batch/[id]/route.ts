@@ -52,6 +52,7 @@ function isDuplicateTransactionError(res?: SddSaleResponse | null, err?: any): b
  *   maxRecords?: number,       // limit processing, default all (ignored if filterByAmount is set)
  *   filterByAmount?: string,   // filter to specific amount (e.g., "1.99")
  *   amountLimit?: number       // limit records with filtered amount (requires filterByAmount)
+ *   coolingPeriodDays?: number // cooling period in days (7 or 30, default 30)
  * }
  */
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -69,6 +70,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const configMaxRecords = body.maxRecords ? Math.max(1, parseInt(body.maxRecords)) : null
     const configFilterByAmount = body.filterByAmount || null
     const configAmountLimit = body.amountLimit ? Math.max(1, parseInt(body.amountLimit)) : null
+    const coolingPeriodDays = body.coolingPeriodDays ? parseInt(body.coolingPeriodDays) : 30
 
     const client = await getMongoClient()
     const db = client.db(getDbName())
@@ -119,17 +121,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       ? doc.rows
       : records.map(() => ({ status: 'pending', attempts: 0 }))
 
-    // Check 30-day threshold before submission
+    // Check cooling period threshold before submission
     const ibansToCheck = extractIbansFromRecords(records)
     if (ibansToCheck.length > 0) {
-      const thresholdResult = await check30DayThreshold(db, ibansToCheck, id)
+      const thresholdResult = await check30DayThreshold(db, ibansToCheck, id, coolingPeriodDays)
 
       if (thresholdResult.violations.length > 0) {
         // Mark violating rows as error
         for (const violation of thresholdResult.violations) {
           rows[violation.rowIndex].status = 'error'
           rows[violation.rowIndex].emp = {
-            message: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait 7 days)`
+            message: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait ${coolingPeriodDays} days)`
           }
           rows[violation.rowIndex].attempts = (rows[violation.rowIndex].attempts || 0) + 1
           rows[violation.rowIndex].lastAttemptAt = new Date()

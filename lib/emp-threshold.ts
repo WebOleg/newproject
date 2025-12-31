@@ -1,7 +1,7 @@
 import { Db, ObjectId } from 'mongodb'
 import { getFieldValue } from './field-aliases'
 
-export const DAYS_THRESHOLD = 7
+export const DAYS_THRESHOLD = 30
 
 export type ThresholdViolation = {
   iban: string
@@ -34,26 +34,29 @@ export function extractIbansFromRecords(
 }
 
 /**
- * Check IBANs against 30-day threshold
+ * Check IBANs against cooling down threshold
  * Queries both emp_reconcile_transactions and uploads collections
  * Returns all violations found
  *
  * @param db - MongoDB database instance
  * @param ibansToCheck - Array of IBANs with their row indexes
  * @param currentUploadId - Optional current upload ID to exclude from checks
+ * @param customDaysThreshold - Optional custom cooling period in days (default: DAYS_THRESHOLD)
  */
 export async function check30DayThreshold(
   db: Db,
   ibansToCheck: Array<{ iban: string; rowIndex: number }>,
-  currentUploadId?: string
+  currentUploadId?: string,
+  customDaysThreshold?: number
 ): Promise<ThresholdCheckResult> {
   if (ibansToCheck.length === 0) {
     return { violations: [], violatedIbans: new Set(), checkedCount: 0 }
   }
 
+  const daysThreshold = customDaysThreshold ?? DAYS_THRESHOLD
   const normalizedIbans = ibansToCheck.map(item => item.iban)
   const thresholdDate = new Date()
-  thresholdDate.setDate(thresholdDate.getDate() - DAYS_THRESHOLD)
+  thresholdDate.setDate(thresholdDate.getDate() - daysThreshold)
 
   const reconcileCollection = db.collection('emp_reconcile_transactions')
   const uploadsCollection = db.collection('uploads')

@@ -34,9 +34,10 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
     await requireWriteAccess()
 
     const { id } = ctx.params
-    const body = await req.json().catch(() => ({})) as { dryRun?: boolean; selection?: number[] }
+    const body = await req.json().catch(() => ({})) as { dryRun?: boolean; selection?: number[]; coolingPeriodDays?: number }
     const dryRun = !!body?.dryRun
     const selection = Array.isArray(body?.selection) ? new Set(body.selection) : null
+    const coolingPeriodDays = body.coolingPeriodDays ? parseInt(String(body.coolingPeriodDays)) : 30
 
     const client = await getMongoClient()
     const db = client.db(getDbName())
@@ -81,21 +82,21 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
       ? doc.rows
       : records.map(() => ({ status: 'pending', attempts: 0 }))
 
-    // Check 30-day threshold before submission
+    // Check cooling period threshold before submission
     const recordsToCheck = selection
       ? records.filter((_, i) => selection.has(i))
       : records
     const ibansToCheck = extractIbansFromRecords(recordsToCheck)
 
     if (ibansToCheck.length > 0) {
-      const thresholdResult = await check30DayThreshold(db, ibansToCheck, id)
+      const thresholdResult = await check30DayThreshold(db, ibansToCheck, id, coolingPeriodDays)
 
       if (thresholdResult.violations.length > 0) {
         // Mark violating rows as error
         for (const violation of thresholdResult.violations) {
           rows[violation.rowIndex].status = 'error'
           rows[violation.rowIndex].emp = {
-            message: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait 30 days)`
+            message: `Invalid: IBAN processed ${violation.daysAgo} day(s) ago (must wait ${coolingPeriodDays} days)`
           }
           rows[violation.rowIndex].attempts = (rows[violation.rowIndex].attempts || 0) + 1
           rows[violation.rowIndex].lastAttemptAt = new Date()
