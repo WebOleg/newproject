@@ -26,25 +26,13 @@ export function Navigation() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 hover-scale transition-transform-smooth">
-            <div className="relative py-16 px-6 h-16 w-[224px] overflow-hidden flex items-center">
-              <Image
-                src="/logo.svg"
-                alt="Melinux logo"
-                height={64}
-                width={256}
-                className="h-16 w-auto"
-                priority
-              />
-            </div>
+            <span className="font-bold text-xl">testingiscool</span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/" className="nav-link text-foreground hover:text-accent transition-colors-smooth">
               Home
-            </Link>
-            <Link href="/about" className="nav-link text-foreground hover:text-accent transition-colors-smooth">
-              About Us
             </Link>
             <div className="relative group">
               <button className="nav-link text-foreground hover:text-accent transition-colors-smooth flex items-center">
@@ -110,12 +98,6 @@ export function Navigation() {
               className="block text-foreground hover:text-accent transition-colors-smooth hover:translate-x-2 transition-transform-smooth"
             >
               Home
-            </Link>
-            <Link
-              href="/about"
-              className="block text-foreground hover:text-accent transition-colors-smooth hover:translate-x-2 transition-transform-smooth"
-            >
-              About Us
             </Link>
             <div className="space-y-2">
               <span className="block text-foreground font-medium">Services</span>

@@ -39,12 +39,12 @@ export default function HomePage() {
           <div className="relative z-10 container-custom text-center text-white">
           <div className="animate-fade-in">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-balance">
-              ACCOUNTING COMPANY MELINUX CYPRUS
+              LOREM IPSUM DOLOR SIT AMET
             </h1>
           </div>
           <div className="animate-fade-in animate-delay-200">
             <p className="text-xl md:text-2xl mb-8 text-white/90 max-w-3xl mx-auto text-pretty">
-              Accounting, legal and consulting services
+              Lorem ipsum dolor sit amet consectetur adipiscing elit
             </p>
           </div>
           <div className="animate-fade-in animate-delay-400">
@@ -87,7 +87,7 @@ export default function HomePage() {
                 </div>
                 <CardHeader>
                   <CardTitle>Accounting services</CardTitle>
-                  <CardDescription>MeLinux Ltd. offers professional accounting and tax consulting services for companies operating in Cyprus…</CardDescription>
+                  <CardDescription>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore...</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button variant="ghost" asChild className="transition-transform-smooth group-hover:translate-x-1">
@@ -399,19 +399,13 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <ScrollAnimation animation="fade-in-left">
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6 text-balance">More About MeLinux</h2>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6 text-balance">More About Us</h2>
                 <p className="text-lg text-muted-foreground mb-6 text-pretty">
-                  MeLinux Ltd. is a well respected accounting company located in Cyprus.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.
                 </p>
                 <p className="text-lg text-muted-foreground mb-8 text-pretty">
-                  Our practice has developed considerably over the years by providing a wide range of services demanded by today’s business. So whether you would like an advice on saving tax or social security payments, tax audit protection, information on latest legislation development and timely reaction you can be sure that MeLinux Ltd. will be able to help you.
+                  Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
                 </p>
-                <Button variant="outline" asChild className="transition-smooth hover-lift bg-transparent">
-                  <Link href="/about">
-                    Learn more about MeLinux
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
               </div>
             </ScrollAnimation>
             <ScrollAnimation animation="fade-in-right" delay={200}>

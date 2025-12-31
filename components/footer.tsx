@@ -20,17 +20,16 @@ export function Footer() {
             <div className="flex items-center space-x-3">
               <Image
                 src="/favicon.png"
-                alt="MeLinux icon"
+                alt="Company icon"
                 height={32}
                 width={32}
                 className="h-8 w-8"
                 priority
               />
-              <span className="font-bold text-xl">MELINUX</span>
+              <span className="font-bold text-xl">COMPANY</span>
             </div>
             <p className="text-primary-foreground/80 text-sm leading-relaxed">
-              Smart solutions for your business. We provide consulting, technology, and tailored services to help your
-              company grow.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore.
             </p>
           </div>
 
@@ -44,14 +43,6 @@ export function Footer() {
                   className="text-primary-foreground/80 hover:text-primary-foreground transition-colors text-sm"
                 >
                   Home
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/about"
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors text-sm"
-                >
-                  About Us
                 </Link>
               </li>
               <li>
@@ -102,16 +93,16 @@ export function Footer() {
           <div className="space-y-4">
             <h3 className="font-semibold text-lg">Contact Info</h3>
             <div className="space-y-2 text-sm">
-              <p className="text-primary-foreground/80">Protara Leoforos No.259M, Kykladon B Block M, Flat 3</p>
-              <p className="text-primary-foreground/80">Paralimni 5291, Cyprus</p>
-              <p className="text-primary-foreground/80">+357 99 746668</p>
-              <p className="text-primary-foreground/80">mail@melinux.net</p>
+              <p className="text-primary-foreground/80">123 Lorem Ipsum Street</p>
+              <p className="text-primary-foreground/80">City 12345</p>
+              <p className="text-primary-foreground/80">+123 456 7890</p>
+              <p className="text-primary-foreground/80">contact@example.com</p>
             </div>
           </div>
         </div>
 
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center">
-          <p className="text-primary-foreground/60 text-sm">© 2025 Melinux. All Rights Reserved.</p>
+          <p className="text-primary-foreground/60 text-sm">© 2025 Company. All Rights Reserved.</p>
         </div>
       </div>
     </footer>

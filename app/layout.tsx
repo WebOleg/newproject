@@ -13,37 +13,37 @@ export const viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://melinux.net"),
+  metadataBase: new URL("https://example.com"),
   title: {
-    default: "MeLinux – Accounting, Tax, Payroll, Consulting in Cyprus",
-    template: "%s | MeLinux",
+    default: "Company – Lorem Ipsum Dolor Sit Amet",
+    template: "%s | Company",
   },
-  description: "Accounting, legal and consulting services in Cyprus. Tax, payroll, registration, investments, and business consulting.",
+  description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   keywords: [
-    "accounting",
-    "tax",
-    "payroll",
-    "consulting",
-    "company registration",
-    "investments",
-    "cyprus",
+    "lorem",
+    "ipsum",
+    "dolor",
+    "sit",
+    "amet",
+    "consectetur",
+    "adipiscing",
   ],
   alternates: {
     canonical: "/",
   },
   openGraph: {
     type: "website",
-    url: "https://melinux.net/",
-    title: "MeLinux – Accounting, Tax, Payroll, Consulting in Cyprus",
-    description: "Accounting, legal and consulting services for businesses in Cyprus.",
-    siteName: "MeLinux",
-    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "MeLinux" }],
+    url: "https://example.com/",
+    title: "Company – Lorem Ipsum Dolor Sit Amet",
+    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+    siteName: "Company",
+    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Company" }],
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MeLinux – Accounting, Tax, Payroll, Consulting",
-    description: "Accounting, legal and consulting services in Cyprus.",
+    title: "Company – Lorem Ipsum Dolor",
+    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
     images: ["/logo.png"],
   },
   robots: {
@@ -78,16 +78,16 @@ export default function RootLayout({
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Organization",
-            name: "MeLinux Ltd.",
-            url: "https://melinux.net/",
-            logo: "https://melinux.net/logo.png",
+            name: "Company Ltd.",
+            url: "https://example.com/",
+            logo: "https://example.com/logo.png",
             sameAs: [],
             address: {
               "@type": "PostalAddress",
-              streetAddress: "Protara Leoforos No.259M, Kykladon B Block M, Flat 3",
-              addressLocality: "Paralimni",
-              postalCode: "5291",
-              addressCountry: "CY",
+              streetAddress: "123 Lorem Ipsum Street",
+              addressLocality: "City",
+              postalCode: "12345",
+              addressCountry: "US",
             },
           })}
         </Script>
@@ -95,8 +95,8 @@ export default function RootLayout({
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebSite",
-            name: "MeLinux",
-            url: "https://melinux.net/",
+            name: "Company",
+            url: "https://example.com/",
           })}
         </Script>
         <SiteChrome />
