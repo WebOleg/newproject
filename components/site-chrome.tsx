@@ -9,10 +9,7 @@ export function SiteChrome() {
 }
 
 export function SiteFooter() {
-  const pathname = usePathname()
-  const hide = pathname?.startsWith('/emp')
-  if (hide) return null
-  return <Footer />
+  return null
 }
 
 
