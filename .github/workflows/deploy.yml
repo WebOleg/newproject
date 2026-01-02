@@ -15,7 +15,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 25m
           script: |
-            cd /var/www/melinux
+            cd /var/www/Tether-Project
             git fetch origin main
             git reset --hard origin/main
             npm install --legacy-peer-deps
